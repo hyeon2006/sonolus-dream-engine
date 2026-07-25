@@ -1,8 +1,7 @@
-from sonolus.script.archetype import EntityRef, WatchArchetype, callback, imported
+from sonolus.script.archetype import WatchArchetype, callback, imported
 from sonolus.script.runtime import is_replay
 
 from sekai.lib import archetype_names
-from sekai.lib.baseevent import init_event_list
 from sekai.lib.buckets import init_buckets
 from sekai.lib.layout import init_layout
 from sekai.lib.level_config import EngineRevision, init_level_config
@@ -12,7 +11,6 @@ from sekai.lib.skin import init_skin
 from sekai.lib.stage import schedule_lane_sfx
 from sekai.lib.streams import Streams
 from sekai.lib.ui import init_ui
-from sekai.watch.dynamic_stage import WatchCameraChange, WatchDynamicStage
 from sekai.watch.note import WATCH_NOTE_ARCHETYPES
 from sekai.watch.static_stage import WatchScheduledLaneEffect, WatchStaticStage
 
@@ -20,17 +18,15 @@ from sekai.watch.static_stage import WatchScheduledLaneEffect, WatchStaticStage
 class WatchInitialization(WatchArchetype):
     name = archetype_names.INITIALIZATION
 
-    revision: EngineRevision = imported(name="revision", default=EngineRevision.SONOLUS_1_1_0)
+    revision: EngineRevision = imported(name="revision", default=EngineRevision.LATEST)
     replay_revision: EngineRevision = imported(name="replayRevision", default=EngineRevision.BASE)
     initial_life: int = imported(name="initialLife", default=1000)
-    first_camera_ref: EntityRef[WatchCameraChange] = imported(name="firstCamera")
 
-    @callback(order=-3)
+    @callback(order=-1)
     def preprocess(self):
         if is_replay():
             self.revision = self.replay_revision
         init_level_config(self.revision)
-        init_event_list(self.first_camera_ref)
         init_layout()
         init_ui()
         init_skin()
@@ -41,16 +37,7 @@ class WatchInitialization(WatchArchetype):
 
         WatchStaticStage.spawn()
 
-        schedule_empty_input_effects()
-
-
-def schedule_empty_input_effects():
-    for input_time, lanes in Streams.empty_input_lanes.iter_items_from(-2):
-        for i, lane in enumerate(lanes):
-            stage_ref = EntityRef[WatchDynamicStage](0)
-            if input_time in Streams.empty_input_stages:
-                stages = Streams.empty_input_stages[input_time]
-                if i < len(stages):
-                    stage_ref.index = stages[i]
-            schedule_lane_sfx(lane, input_time)
-            WatchScheduledLaneEffect.spawn(lane=lane, target_time=input_time, stage_ref=stage_ref)
+        for input_time, lanes in Streams.empty_input_lanes.iter_items_from(-2):
+            for lane in lanes:
+                schedule_lane_sfx(lane, input_time)
+                WatchScheduledLaneEffect.spawn(lane=lane, target_time=input_time)

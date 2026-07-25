@@ -1,34 +1,22 @@
 from math import ceil
-from typing import assert_never, cast
+from typing import assert_never
 
 from sonolus.script.archetype import EntityRef, PreviewArchetype, callback, entity_data, imported
-from sonolus.script.array import Dim
-from sonolus.script.containers import VarArray
-from sonolus.script.interval import clamp, lerp
-from sonolus.script.record import Record
+from sonolus.script.interval import clamp, lerp, remap_clamped, unlerp_clamped
 from sonolus.script.sprite import Sprite
 
 from sekai.lib import archetype_names
 from sekai.lib.connector import (
-    CONNECTOR_ZERO_SIZE_FALLBACK,
-    ActiveConnectorKind,
     ConnectorKind,
-    ConnectorLayer,
-    GuideConnectorKind,
     get_active_connector_sprites,
     get_connector_alpha_option,
-    get_connector_base_kind,
-    get_connector_fractions,
     get_connector_quality_option,
     get_connector_z,
     get_damage_connector_sprite,
     get_guide_connector_sprite,
-    masked_connector_extents_by_limits,
 )
-from sekai.lib.ease import EaseType, is_in_step_ease, is_step_ease, safe_unlerp_clamped
+from sekai.lib.ease import EaseType, ease
 from sekai.lib.layout import get_alpha
-from sekai.lib.level_config import LevelConfig
-from sekai.lib.stage import interpolate_visual_masks
 from sekai.preview import note
 from sekai.preview.layout import (
     PREVIEW_COLUMN_SECS,
@@ -75,7 +63,6 @@ class PreviewConnector(PreviewArchetype):
             segment_head_alpha=self.segment_head.segment_alpha,
             segment_tail_target_time=self.segment_tail.target_time,
             segment_tail_alpha=self.segment_tail.segment_alpha,
-            layer=self.segment_head.segment_layer,
         )
 
     @property
@@ -95,17 +82,6 @@ class PreviewConnector(PreviewArchetype):
         return self.segment_tail_ref.get()
 
 
-class PreviewConnectorSample(Record):
-    raw_lane: float
-    raw_size: float
-    lane: float
-    size: float
-    masked_size: float
-    mask_left: float
-    mask_right: float
-    mask_enabled: bool
-
-
 def draw_connector(
     kind: ConnectorKind,
     ease_type: EaseType,
@@ -122,26 +98,22 @@ def draw_connector(
     segment_head_alpha: float,
     segment_tail_target_time: float,
     segment_tail_alpha: float,
-    layer: ConnectorLayer,
 ):
     if head_target_time == tail_target_time:
         return
 
-    if is_in_step_ease(ease_type):
+    if ease_type == EaseType.NONE:
         tail_size = head_size
-    if head_size <= 0 and tail_size <= 0:
-        return
 
     normal_sprite = Sprite(-1)
-    base_kind = get_connector_base_kind(kind)
-    match base_kind:
+    match kind:
         case (
             ConnectorKind.ACTIVE_NORMAL
             | ConnectorKind.ACTIVE_CRITICAL
-            | ConnectorKind.FAKE_ACTIVE_NORMAL
-            | ConnectorKind.FAKE_ACTIVE_CRITICAL
+            | ConnectorKind.ACTIVE_FAKE_NORMAL
+            | ConnectorKind.ACTIVE_FAKE_CRITICAL
         ):
-            sprites = get_active_connector_sprites(cast(ActiveConnectorKind, kind))
+            sprites = get_active_connector_sprites(kind)
             normal_sprite @= sprites.connection.normal
         case (
             ConnectorKind.GUIDE_NEUTRAL
@@ -153,24 +125,19 @@ def draw_connector(
             | ConnectorKind.GUIDE_CYAN
             | ConnectorKind.GUIDE_BLACK
         ):
-            normal_sprite @= get_guide_connector_sprite(cast(GuideConnectorKind, kind))
+            normal_sprite @= get_guide_connector_sprite(kind)
         case ConnectorKind.DAMAGE | ConnectorKind.FAKE_DAMAGE:
-            normal_sprite @= get_damage_connector_sprite(kind)
+            normal_sprite @= get_damage_connector_sprite()
         case ConnectorKind.NONE:
             return
         case _:
-            assert_never(base_kind)
+            assert_never(kind)
 
-    match base_kind:
-        case (
-            ConnectorKind.ACTIVE_NORMAL
-            | ConnectorKind.ACTIVE_CRITICAL
-            | ConnectorKind.DAMAGE
-            | ConnectorKind.FAKE_DAMAGE
-        ):
+    match kind:
+        case ConnectorKind.ACTIVE_NORMAL | ConnectorKind.ACTIVE_CRITICAL:
             segment_head_alpha = 1.0
             segment_tail_alpha = 1.0
-        case ConnectorKind.FAKE_ACTIVE_NORMAL | ConnectorKind.FAKE_ACTIVE_CRITICAL:
+        case ConnectorKind.ACTIVE_FAKE_NORMAL | ConnectorKind.ACTIVE_FAKE_CRITICAL:
             segment_head_alpha = 1.0
             segment_tail_alpha = 1.0
         case (
@@ -182,346 +149,81 @@ def draw_connector(
             | ConnectorKind.GUIDE_PURPLE
             | ConnectorKind.GUIDE_CYAN
             | ConnectorKind.GUIDE_BLACK
+            | ConnectorKind.DAMAGE
+            | ConnectorKind.FAKE_DAMAGE
         ):
             pass
         case _:
-            assert_never(base_kind)
+            assert_never(kind)
 
-    head_alpha = lerp(
-        segment_head_alpha,
-        segment_tail_alpha,
-        safe_unlerp_clamped(segment_head_target_time, segment_tail_target_time, head_target_time),
+    head_alpha = remap_clamped(
+        segment_head_target_time, segment_tail_target_time, segment_head_alpha, segment_tail_alpha, head_target_time
     )
-    tail_alpha = lerp(
-        segment_head_alpha,
-        segment_tail_alpha,
-        safe_unlerp_clamped(segment_head_target_time, segment_tail_target_time, tail_target_time),
+    tail_alpha = remap_clamped(
+        segment_head_target_time, segment_tail_target_time, segment_head_alpha, segment_tail_alpha, tail_target_time
     )
 
-    quality_dist_scale = 100 / PREVIEW_COLUMN_SECS * (tail_target_time - head_target_time)
-    if (
-        (ease_type == EaseType.LINEAR or is_step_ease(ease_type))
-        and head_alpha == tail_alpha
-        and not LevelConfig.dynamic_stages
-    ):
-        quality_dist_scale = 0
-    # Split in-out steps at the jump and sample each piece at its midpoint.
-    split_time = tail_target_time
-    if ease_type == EaseType.IN_OUT_STEP and head_ease_frac < 0.5 < tail_ease_frac:
-        split_time = lerp(
-            head_target_time, tail_target_time, (0.5 - head_ease_frac) / (tail_ease_frac - head_ease_frac)
-        )
+    match ease_type:
+        case EaseType.NONE | EaseType.LINEAR if head_alpha == tail_alpha:
+            quality_dist_scale = 0
+        case _:
+            quality_dist_scale = 100 / PREVIEW_COLUMN_SECS * (tail_target_time - head_target_time)
     quality_alpha_scale = 30 * abs(head_alpha - tail_alpha)
     segment_count = max(1, ceil(get_connector_quality_option(kind) * max(quality_dist_scale, quality_alpha_scale)))
+
+    eased_head_ease_frac = ease(ease_type, head_ease_frac)
+    eased_tail_ease_frac = ease(ease_type, tail_ease_frac)
 
     head = head_ref.get()
     tail = tail_ref.get()
 
-    # The head note uses the stage settings just before its target time. The connector starts just after it,
-    # so use the new settings immediately instead of blending them across the first slice.
-    last_sample = connector_sample_at(
-        head,
-        tail,
-        ease_type,
-        head_size,
-        head_target_time,
-        head_ease_frac,
-        tail_size,
-        tail_target_time,
-        tail_ease_frac,
-        head_target_time,
-        step_piece_time(ease_type, head_target_time, split_time, tail_target_time, head_target_time, False),
-        right_limit=True,
-    )
+    last_lane = head.visual_lane_at(head_target_time)
+    last_size = head_size
     last_alpha = head_alpha
     last_target_time = head_target_time
+    last_col = time_to_preview_col(head_target_time)
 
     for i in range(1, segment_count + 1):
-        interval_end_time = lerp(head_target_time, tail_target_time, i / segment_count)
-        while last_target_time < interval_end_time:
-            # Split at each stage event so each slice uses the settings on its own side of the event.
-            next_event_time = min(
-                head.next_visual_mask_event_time(last_target_time),
-                tail.next_visual_mask_event_time(last_target_time),
-            )
-            if last_target_time < split_time < tail_target_time:
-                next_event_time = min(next_event_time, split_time)
-            at_event = next_event_time <= interval_end_time
-            next_target_time = min(interval_end_time, next_event_time)
-            next_sample = connector_sample_at(
-                head,
-                tail,
-                ease_type,
-                head_size,
-                head_target_time,
-                head_ease_frac,
-                tail_size,
-                tail_target_time,
-                tail_ease_frac,
-                next_target_time,
-                step_piece_time(ease_type, head_target_time, split_time, tail_target_time, next_target_time, at_event),
-                # Interior samples keep their side of a nearby jump; the tail matches its note.
-                exact=next_target_time < tail_target_time,
-            )
-            next_alpha = lerp(
-                head_alpha,
-                tail_alpha,
-                safe_unlerp_clamped(head_target_time, tail_target_time, next_target_time),
-            )
-            a = clamp(
-                get_alpha((last_target_time + next_target_time) / 2)
-                * (last_alpha + next_alpha)
-                / 2
-                * get_connector_alpha_option(kind),
-                0,
-                1,
-            )
-            draw_preview_connector_sample_span(
-                normal_sprite,
-                kind,
-                layer,
-                segment_head_target_time,
-                segment_head_lane,
-                last_sample,
-                next_sample,
-                last_target_time,
-                next_target_time,
-                a,
-            )
+        next_frac = i / segment_count
+        next_ease_frac = lerp(head_ease_frac, tail_ease_frac, next_frac)
+        next_interp_frac = unlerp_clamped(eased_head_ease_frac, eased_tail_ease_frac, ease(ease_type, next_ease_frac))
+        next_target_time = lerp(head_target_time, tail_target_time, next_frac)
+        head_lane_at_t = head.visual_lane_at(next_target_time)
+        if ease_type == EaseType.NONE:
+            tail_lane_at_t = head_lane_at_t
+        else:
+            tail_lane_at_t = tail.visual_lane_at(next_target_time)
+        next_lane = lerp(head_lane_at_t, tail_lane_at_t, next_interp_frac)
+        next_size = max(1e-3, lerp(head_size, tail_size, next_interp_frac))
+        next_alpha = lerp(head_alpha, tail_alpha, next_frac)
+        next_col = time_to_preview_col(next_target_time)
 
-            last_sample @= next_sample
-            last_alpha = next_alpha
-            last_target_time = next_target_time
-            if at_event and last_target_time < tail_target_time:
-                last_sample @= connector_sample_at(
-                    head,
-                    tail,
-                    ease_type,
-                    head_size,
-                    head_target_time,
-                    head_ease_frac,
-                    tail_size,
-                    tail_target_time,
-                    tail_ease_frac,
-                    last_target_time,
-                    step_piece_time(ease_type, head_target_time, split_time, tail_target_time, last_target_time, False),
-                    right_limit=True,
-                )
-
-
-def step_piece_time(
-    ease_type: EaseType, head_target_time: float, split_time: float, tail_target_time: float, t: float, left_limit: bool
-) -> float:
-    if not is_step_ease(ease_type):
-        return t
-    if t < split_time or (t == split_time and (left_limit or split_time >= tail_target_time)):
-        return (head_target_time + split_time) / 2
-    return (split_time + tail_target_time) / 2
-
-
-def connector_sample_at(
-    head: note.PreviewBaseNote,
-    tail: note.PreviewBaseNote,
-    ease_type: EaseType,
-    head_size: float,
-    head_target_time: float,
-    head_ease_frac: float,
-    tail_size: float,
-    tail_target_time: float,
-    tail_ease_frac: float,
-    target_time: float,
-    ease_time: float,
-    *,
-    right_limit: bool = False,
-    exact: bool = False,
-) -> PreviewConnectorSample:
-    result = +PreviewConnectorSample
-    _, interp_frac = get_connector_fractions(
-        ease_type,
-        head_target_time,
-        head_ease_frac,
-        tail_target_time,
-        tail_ease_frac,
-        ease_time,
-    )
-    head_lane = head.visual_lane_at(target_time, right_limit=right_limit, exact=exact)
-    tail_lane = (
-        head_lane
-        if is_in_step_ease(ease_type)
-        else tail.visual_lane_at(target_time, right_limit=right_limit, exact=exact)
-    )
-    result.raw_lane = lerp(head_lane, tail_lane, interp_frac)
-    result.raw_size = lerp(head_size, tail_size, interp_frac)
-    mask = interpolate_visual_masks(
-        head.visual_mask_at(target_time, right_limit=right_limit, exact=exact),
-        tail.visual_mask_at(target_time, right_limit=right_limit, exact=exact),
-        interp_frac,
-    )
-    result.lane = result.raw_lane
-    result.size = max(result.raw_size, CONNECTOR_ZERO_SIZE_FALLBACK)
-    result.masked_size = result.raw_size
-    result.mask_left = mask.left
-    result.mask_right = mask.right
-    result.mask_enabled = mask.enabled
-    if mask.enabled:
-        result.lane, result.size, result.masked_size = masked_connector_extents_by_limits(
-            result.raw_lane, result.raw_size, mask.left, mask.right
-        )
-    return result
-
-
-def draw_preview_connector_sample_span(
-    sprite: Sprite,
-    kind: ConnectorKind,
-    layer: ConnectorLayer,
-    segment_head_target_time: float,
-    segment_head_lane: float,
-    start: PreviewConnectorSample,
-    end: PreviewConnectorSample,
-    start_time: float,
-    end_time: float,
-    alpha: float,
-):
-    if start.mask_enabled and end.mask_enabled:
-        draw_masked_preview_connector_sample_span(
-            sprite,
-            kind,
-            layer,
-            segment_head_target_time,
-            segment_head_lane,
-            start,
-            end,
-            start_time,
-            end_time,
-            alpha,
-        )
-    else:
-        draw_preview_connector_piece(
-            sprite,
-            kind,
-            layer,
-            segment_head_target_time,
-            segment_head_lane,
-            start.lane,
-            start.size,
-            start_time,
-            end.lane,
-            end.size,
-            end_time,
-            alpha,
+        a = clamp(
+            get_alpha((last_target_time + next_target_time) / 2)
+            * (last_alpha + next_alpha)
+            / 2
+            * get_connector_alpha_option(kind),
+            0,
+            1,
         )
 
+        for col in range(last_col, next_col + 1):
+            z = get_connector_z(kind, get_adjusted_time(segment_head_target_time, col), segment_head_lane, active=False)
+            start_y = time_to_preview_y(last_target_time, col)
+            end_y = time_to_preview_y(next_target_time, col)
+            for layout in layout_preview_slide_connector_segment(
+                start_lane=last_lane,
+                start_size=last_size,
+                start_y=start_y,
+                end_lane=next_lane,
+                end_size=next_size,
+                end_y=end_y,
+                col=col,
+            ):
+                normal_sprite.draw(layout, z=z.tuple, a=a)
 
-def draw_masked_preview_connector_sample_span(
-    sprite: Sprite,
-    kind: ConnectorKind,
-    layer: ConnectorLayer,
-    segment_head_target_time: float,
-    segment_head_lane: float,
-    start: PreviewConnectorSample,
-    end: PreviewConnectorSample,
-    start_time: float,
-    end_time: float,
-    alpha: float,
-):
-    # Split at each crossing between a connector edge and a mask edge. A connector can cross the visible area
-    # even when both ends of the sample are outside the mask.
-    split_fracs = VarArray[float, Dim[5]].new()
-    split_fracs.append(1.0)
-    append_connector_mask_crossing(
-        split_fracs,
-        start.raw_lane - start.raw_size - start.mask_left,
-        end.raw_lane - end.raw_size - end.mask_left,
-    )
-    append_connector_mask_crossing(
-        split_fracs,
-        start.raw_lane - start.raw_size - start.mask_right,
-        end.raw_lane - end.raw_size - end.mask_right,
-    )
-    append_connector_mask_crossing(
-        split_fracs,
-        start.raw_lane + start.raw_size - start.mask_left,
-        end.raw_lane + end.raw_size - end.mask_left,
-    )
-    append_connector_mask_crossing(
-        split_fracs,
-        start.raw_lane + start.raw_size - start.mask_right,
-        end.raw_lane + end.raw_size - end.mask_right,
-    )
-    split_fracs.sort()
-
-    sub_start_frac = 0.0
-    sub_start_lane = start.lane
-    sub_start_size = start.size
-    sub_start_masked_size = start.masked_size
-    for sub_end_frac in split_fracs:
-        if sub_end_frac <= sub_start_frac:
-            continue
-        sub_end_raw_lane = lerp(start.raw_lane, end.raw_lane, sub_end_frac)
-        sub_end_raw_size = lerp(start.raw_size, end.raw_size, sub_end_frac)
-        sub_end_mask_left = lerp(start.mask_left, end.mask_left, sub_end_frac)
-        sub_end_mask_right = lerp(start.mask_right, end.mask_right, sub_end_frac)
-        sub_end_lane, sub_end_size, sub_end_masked_size = masked_connector_extents_by_limits(
-            sub_end_raw_lane,
-            sub_end_raw_size,
-            sub_end_mask_left,
-            sub_end_mask_right,
-        )
-        if sub_start_masked_size > 0 or sub_end_masked_size > 0:
-            draw_preview_connector_piece(
-                sprite,
-                kind,
-                layer,
-                segment_head_target_time,
-                segment_head_lane,
-                sub_start_lane,
-                sub_start_size,
-                lerp(start_time, end_time, sub_start_frac),
-                sub_end_lane,
-                sub_end_size,
-                lerp(start_time, end_time, sub_end_frac),
-                alpha,
-            )
-        sub_start_frac = sub_end_frac
-        sub_start_lane = sub_end_lane
-        sub_start_size = sub_end_size
-        sub_start_masked_size = sub_end_masked_size
-
-
-def append_connector_mask_crossing(split_fracs: VarArray[float, Dim[5]], start_delta: float, end_delta: float):
-    if min(start_delta, end_delta) < 0 < max(start_delta, end_delta):
-        split_fracs.append(-start_delta / (end_delta - start_delta))
-
-
-def draw_preview_connector_piece(
-    sprite: Sprite,
-    kind: ConnectorKind,
-    layer: ConnectorLayer,
-    segment_head_target_time: float,
-    segment_head_lane: float,
-    start_lane: float,
-    start_size: float,
-    start_time: float,
-    end_lane: float,
-    end_size: float,
-    end_time: float,
-    alpha: float,
-):
-    start_col = time_to_preview_col(start_time)
-    end_col = time_to_preview_col(end_time)
-    for col in range(start_col, end_col + 1):
-        z = get_connector_z(
-            kind, get_adjusted_time(segment_head_target_time, col), segment_head_lane, active=False, layer=layer
-        )
-        start_y = time_to_preview_y(start_time, col)
-        end_y = time_to_preview_y(end_time, col)
-        for layout in layout_preview_slide_connector_segment(
-            start_lane=start_lane,
-            start_size=start_size,
-            start_y=start_y,
-            end_lane=end_lane,
-            end_size=end_size,
-            end_y=end_y,
-            col=col,
-        ):
-            sprite.draw(layout, z=z.tuple, a=alpha)
+        last_lane = next_lane
+        last_size = next_size
+        last_alpha = next_alpha
+        last_target_time = next_target_time
+        last_col = next_col

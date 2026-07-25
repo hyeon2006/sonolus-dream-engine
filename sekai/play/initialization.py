@@ -1,7 +1,6 @@
-from sonolus.script.archetype import EntityRef, PlayArchetype, callback, exported, imported
+from sonolus.script.archetype import PlayArchetype, callback, exported, imported
 
 from sekai.lib import archetype_names
-from sekai.lib.baseevent import init_event_list
 from sekai.lib.buckets import init_buckets
 from sekai.lib.layout import init_layout
 from sekai.lib.level_config import EngineRevision, init_level_config
@@ -10,7 +9,6 @@ from sekai.lib.particle import init_particles
 from sekai.lib.skin import init_skin
 from sekai.lib.ui import init_ui
 from sekai.play.common import init_play_common
-from sekai.play.dynamic_stage import CameraChange
 from sekai.play.input_manager import InputManager
 from sekai.play.note import NOTE_ARCHETYPES
 from sekai.play.static_stage import StaticStage
@@ -21,14 +19,11 @@ class Initialization(PlayArchetype):
 
     revision: EngineRevision = imported(name="revision", default=EngineRevision.SONOLUS_1_1_0)
     initial_life: int = imported(name="initialLife", default=1000)
-    first_camera_ref: EntityRef[CameraChange] = imported(name="firstCamera")
-
     replay_revision: EngineRevision = exported(name="replayRevision")
 
-    @callback(order=-3)
+    @callback(order=-1)
     def preprocess(self):
         init_level_config(self.revision)
-        init_event_list(self.first_camera_ref)
         init_layout()
         init_skin()
         init_particles()

@@ -6,14 +6,6 @@ from sekai.lib.particle import BaseParticles
 from sekai.lib.skin import BaseSkin
 from sekai.play.bpm_change import BpmChange
 from sekai.play.connector import CONNECTOR_ARCHETYPES
-from sekai.play.dynamic_stage import (
-    CameraChange,
-    DynamicStage,
-    StageMaskChange,
-    StagePivotChange,
-    StageStyleChange,
-    StageTransformChange,
-)
 from sekai.play.initialization import Initialization
 from sekai.play.input_manager import InputManager
 from sekai.play.note import NOTE_ARCHETYPES
@@ -25,12 +17,6 @@ from sekai.play.timescale import TimescaleChange, TimescaleGroup
 play_mode = PlayMode(
     archetypes=[
         Initialization,
-        CameraChange,
-        StageTransformChange,
-        DynamicStage,
-        StageMaskChange,
-        StagePivotChange,
-        StageStyleChange,
         StaticStage,
         InputManager,
         BpmChange,

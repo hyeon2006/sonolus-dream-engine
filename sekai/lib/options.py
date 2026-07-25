@@ -317,15 +317,10 @@ class Options:
         advanced=True,
         default=1,
     )
-    edge_touch_correction: bool = toggle_option(
-        name="Edge Touch Correction",
-        category=gameplay,
-        scope="Next Sekai",
-        default=True,
-    )
     show_hitboxes: bool = toggle_option(
         name="Show Hitboxes",
         category=miscellaneous,
+        standard=True,
         advanced=True,
         scope="Next Sekai",
         default=False,
@@ -333,15 +328,9 @@ class Options:
     test_aspect_ratio: bool = toggle_option(
         name="Test Aspect Ratio",
         category=miscellaneous,
-        advanced=True,
-        scope="Next Sekai",
-        default=False,
-    )
-    allow_debug_options_in_play_mode: bool = toggle_option(
-        name="Allow Debug Options in Play Mode",
-        category=miscellaneous,
         standard=True,
         advanced=True,
+        scope="Next Sekai",
         default=False,
     )
 

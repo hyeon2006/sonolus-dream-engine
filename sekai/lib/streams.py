@@ -9,5 +9,4 @@ from sekai.lib.connector import ConnectorKind, ConnectorVisualState
 class Streams:
     empty_input_lanes: Stream[VarArray[float, Dim[16]]]
     connector_visual_states: StreamGroup[ConnectorVisualState, Dim[1_000_000]]
-    connector_effect_kinds: StreamGroup[ConnectorKind, Dim[1_000_000]]
-    empty_input_stages: Stream[VarArray[int, Dim[16]]]
+    connector_kinds: StreamGroup[ConnectorKind, Dim[1_000_000]]

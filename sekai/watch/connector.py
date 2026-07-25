@@ -1,37 +1,24 @@
 from __future__ import annotations
 
-from math import inf
-from typing import assert_never, cast
+from typing import assert_never
 
 from sonolus.script.archetype import EntityRef, WatchArchetype, callback, entity_data, entity_memory, imported
-from sonolus.script.interval import Interval, lerp
+from sonolus.script.interval import Interval, lerp, remap_clamped, unlerp_clamped
 from sonolus.script.particle import ParticleHandle
 from sonolus.script.runtime import is_replay, is_skip, time
-from sonolus.script.values import alloc
 
 from sekai.debug import DISABLE_NOTES
 from sekai.lib import archetype_names
 from sekai.lib.connector import (
     CONNECTOR_LENIENCY,
     CONNECTOR_SLOT_SPAWN_PERIOD,
-    CONNECTOR_THROUGH_JUDGE_LINE_DESPAWN_DELAY,
     CONNECTOR_TRAIL_SPAWN_PERIOD,
     ActiveConnectorInfo,
-    ActiveConnectorKind,
     ConnectorKind,
-    ConnectorRenderInfo,
     ConnectorVisualState,
-    DamageConnectorKind,
-    SlideConnectorKind,
     destroy_looped_particle,
     draw_connector,
     draw_connector_slot_glow_effect,
-    get_connector_alpha_frac,
-    get_connector_alpha_option,
-    get_connector_base_kind,
-    get_connector_fractions,
-    get_connector_interp_frac,
-    get_connector_render_info,
     schedule_connector_sfx,
     should_show_connector_hitbox,
     spawn_connector_slot_particles,
@@ -39,38 +26,13 @@ from sekai.lib.connector import (
     update_circular_connector_particle,
     update_linear_connector_particle,
 )
-from sekai.lib.ease import EaseType, is_in_step_ease, safe_unlerp_clamped
-from sekai.lib.layout import (
-    ElevationTransformPreparation,
-    StageTransform,
-    blend_stage_transform,
-    current_layout_transform,
-)
-from sekai.lib.note import draw_connector_hitbox_overlay, draw_slide_note_head
+from sekai.lib.ease import EaseType, ease
+from sekai.lib.layout import IDENTITY_AFFINE_TRANSFORM
+from sekai.lib.note import draw_connector_hitbox_overlay, draw_slide_note_head, get_attach_params
 from sekai.lib.options import Options
-from sekai.lib.stage import VisualMask, masked_note_extents_by_limits
 from sekai.lib.streams import Streams
-from sekai.lib.timescale import (
-    MIN_START_TIME,
-    TrajectoryCache,
-    group_hide_notes,
-    register_group_window,
-)
-from sekai.lib.timescale_consumer import (
-    connector_visibility_end,
-    connector_visibility_start,
-    extend_note_chain_stage_windows,
-    note_visual_progress,
-    prepare_note_trajectories,
-    register_note_group_window,
-)
+from sekai.lib.timescale import group_hide_notes, update_timescale_group
 from sekai.watch import note
-
-
-def slide_manager_end_time(active_tail: note.WatchBaseNote) -> float:
-    if active_tail.is_scored:
-        return min(active_tail.target_time, active_tail.despawn_time())
-    return active_tail.target_time
 
 
 class WatchConnector(WatchArchetype):
@@ -85,115 +47,58 @@ class WatchConnector(WatchArchetype):
 
     kind: ConnectorKind = entity_data()
     ease_type: EaseType = entity_data()
-    shared_stage_transform: bool = entity_data()
     start_time: float = entity_data()
-    scheduled_spawn_time: float = entity_data()
     end_time: float = entity_data()
     visual_active_interval: Interval = entity_data()
-    ease_over_elevation: bool = entity_data()
-    time_attachment_slice: bool = entity_data()
-    render_info: ConnectorRenderInfo = entity_data()
-
-    head_trajectory_first: TrajectoryCache = entity_memory()
-    head_trajectory_second: TrajectoryCache = entity_memory()
-    tail_trajectory_first: TrajectoryCache = entity_memory()
-    tail_trajectory_second: TrajectoryCache = entity_memory()
 
     @callback(order=1)
     def preprocess(self):
-        self.start_time = inf
-        self.scheduled_spawn_time = inf
         if DISABLE_NOTES:
             return
         head = self.head
         tail = self.tail
-        # A connector can be visible even when its endpoint notes are hidden.
-        if not head.preprocess_done or not tail.preprocess_done:
-            return
-        if not self.segment_head.preprocess_done or not self.segment_tail.preprocess_done:
-            return
-        if self.active_head_ref.index > 0 and not self.active_head.preprocess_done:
-            return
-        if self.active_tail_ref.index > 0 and not self.active_tail.preprocess_done:
-            return
-        self.ease_over_elevation = head.beat == tail.beat
-        self.time_attachment_slice = self.ease_over_elevation and (head.has_time_attachment or tail.has_time_attachment)
-        self.shared_stage_transform = (
-            not head.is_attached
-            and not tail.is_attached
-            and head.stage_ref.index == tail.stage_ref.index
-            and head.elevation == tail.elevation
-        )
         self.kind = self.segment_head.segment_kind
-        self.render_info = get_connector_render_info(self.kind, self.segment_head.segment_layer)
         self.ease_type = head.connector_ease
         self.visual_active_interval.start = min(head.target_time, tail.target_time)
         self.visual_active_interval.end = max(head.target_time, tail.target_time)
-        self.end_time = self.visual_active_interval.end
-        if self.segment_head.segment_through_judge_line:
-            self.end_time += CONNECTOR_THROUGH_JUDGE_LINE_DESPAWN_DELAY
-        self.schedule_sfx()
-
-        start_time = min(
+        self.start_time = min(
             self.visual_active_interval.start,
-            head.spawn_eligibility_time,
-            tail.spawn_eligibility_time,
+            head.start_time,
+            tail.start_time,
         )
-        # Hidden active sections still provide slide-head ownership and hitboxes.
-        if self.active_head_ref.index <= 0:
-            self.end_time = connector_visibility_end(
-                head, tail, self.segment_head.timescale_group, self.end_time, start_time
-            )
-            start_time = connector_visibility_start(
-                head, tail, self.segment_head.timescale_group, start_time, self.end_time
-            )
-            if start_time >= self.end_time or self.end_time <= MIN_START_TIME:
-                return
-
-        head.extend_stage_windows(start_time - 1.0, self.end_time + 1.0)
-        tail.extend_stage_windows(start_time - 1.0, self.end_time + 1.0)
-
-        register_note_group_window(head, start_time, self.end_time)
-        register_note_group_window(tail, start_time, self.end_time)
-        register_group_window(self.segment_head.timescale_group, start_time, self.end_time)
+        self.end_time = self.visual_active_interval.end
 
         if self.head_ref.index == self.active_head_ref.index:
-            manager_end = slide_manager_end_time(self.active_tail)
-            extend_note_chain_stage_windows(self.active_head, self.active_head.target_time, manager_end)
+            # This is the first connector, so spawn the WatchSlideManager.
             WatchSlideManager.spawn(active_head_ref=self.active_head_ref, active_tail_ref=self.active_tail_ref)
 
-        self.start_time = start_time
-        self.scheduled_spawn_time = start_time
+        self.schedule_sfx()
 
     def spawn_time(self) -> float:
         if DISABLE_NOTES:
             return 1e8
-        return self.scheduled_spawn_time
+        return self.start_time
 
     def despawn_time(self) -> float:
         return self.end_time
 
     @callback(order=-1)
     def update_sequential(self):
-        if time() < self.start_time:
-            return
+        update_timescale_group(self.head.timescale_group)
+        update_timescale_group(self.tail.timescale_group)
+        update_timescale_group(self.segment_head.timescale_group)
+
         if self.active_head_ref.index > 0 and time() in self.visual_active_interval:
-            # Callback order decides which connector wins when visual intervals overlap.
-            self.active_connector_info.visual_connector_index = self.index + 1
-            self.active_connector_info.visual_update_time = time()
+            visual_lane, visual_size = self.get_attached_params(time())
+            self.active_connector_info.visual_lane = visual_lane
+            self.active_connector_info.visual_size = visual_size
             self.active_connector_info.connector_kind = self.kind
-        if (
-            self.active_head_ref.index > 0
-            and self.active_connector_info.visual_connector_index == self.index + 1
-            and group_hide_notes(self.segment_head.timescale_group)
-        ):
+        if group_hide_notes(self.segment_head.timescale_group) and self.active_head_ref.index > 0:
             self.active_connector_info.connector_kind = ConnectorKind.NONE
 
     def update_parallel(self):
-        if time() < self.start_time:
-            return
         self.draw_hitbox()
-        if time() < self.visual_active_interval.end or self.segment_head.segment_through_judge_line:
+        if time() < self.visual_active_interval.end:
             head = self.head
             tail = self.tail
             segment_head = self.segment_head
@@ -201,7 +106,7 @@ class WatchConnector(WatchArchetype):
             if self.active_head_ref.index > 0:
                 if is_replay():
                     visual_state = Streams.connector_visual_states[self.index].get_previous_inclusive(time())
-                elif self.render_info.base_kind == ConnectorKind.DAMAGE:
+                elif self.kind == ConnectorKind.DAMAGE:
                     # Autoplay never touches damage connectors.
                     visual_state = ConnectorVisualState.WAITING
                 elif time() < self.active_head.target_time:
@@ -212,99 +117,34 @@ class WatchConnector(WatchArchetype):
                 visual_state = ConnectorVisualState.WAITING
             if group_hide_notes(segment_head.timescale_group):
                 return
-            if self.active_tail_ref.index > 0:
-                active_tail = self.active_tail
-                # A hidden fake tail can despawn while its connector is still visible.
-                active_tail_end = active_tail.despawn_time() if active_tail.is_scored else active_tail.target_time
-                if time() >= active_tail_end:
-                    return
-            self.draw_fake_damage_head()
-            if get_connector_alpha_option(self.kind, base_kind=self.render_info.base_kind) <= 0:
+            if self.active_tail_ref.index > 0 and time() >= self.active_tail.despawn_time():
                 return
-            head_note_alpha = head.visual_note_alpha
-            tail_note_alpha = tail.visual_note_alpha
-            if head_note_alpha <= 0 and tail_note_alpha <= 0:
-                return
-            prepare_note_trajectories(tail, self.tail_trajectory_first, self.tail_trajectory_second, time())
-            head_transform = +StageTransform
-            tail_transform = +StageTransform
-            tail_transform @= tail.visual_stage_transform()
-            shared_stage_transform = self.shared_stage_transform
-            if shared_stage_transform:
-                head_transform @= tail_transform
-            else:
-                head_transform @= head.visual_stage_transform()
-            head_mask = +VisualMask
-            head_mask @= head.visual_mask
-            tail_mask = tail.visual_mask
-            head_alpha_frac = -1.0
-            tail_alpha_frac = -1.0
-            if segment_head.beat == segment_tail.beat:
-                head_alpha_frac = get_connector_alpha_frac(head, segment_head, segment_tail)
-                tail_alpha_frac = get_connector_alpha_frac(tail, segment_head, segment_tail)
-            if time() >= head.target_time and not segment_head.segment_through_judge_line:
-                head_frac = safe_unlerp_clamped(head.target_time, tail.target_time, time())
-                head_visual_progress = 1.0 - lerp(head.visual_y_offset, tail.visual_y_offset, head_frac)
+            if time() >= head.target_time:
+                head_visual_progress = 1.0
                 head_target_time = time()
-                head_note_alpha = lerp(head_note_alpha, tail_note_alpha, head_frac)
-                if head_alpha_frac >= 0:
-                    head_alpha_frac = lerp(head_alpha_frac, tail_alpha_frac, head_frac)
-                if is_in_step_ease(self.ease_type) or head_frac <= 0:
+                if self.ease_type == EaseType.NONE:
                     head_lane = head.visual_lane
                     head_size = head.size
                     head_ease_frac = head.head_ease_frac
                 else:
-                    head_ease_frac = lerp(head.head_ease_frac, tail.tail_ease_frac, head_frac)
-                    head_interp_frac = get_connector_interp_frac(
-                        self.ease_type,
-                        head.head_ease_frac,
-                        tail.tail_ease_frac,
-                        head_ease_frac,
-                        head_frac,
+                    head_ease_frac = remap_clamped(
+                        head.target_time, tail.target_time, head.head_ease_frac, tail.tail_ease_frac, time()
+                    )
+                    head_interp_frac = unlerp_clamped(
+                        ease(self.ease_type, head.head_ease_frac),
+                        ease(self.ease_type, tail.tail_ease_frac),
+                        ease(self.ease_type, head_ease_frac),
                     )
                     head_lane = lerp(head.visual_lane, tail.visual_lane, head_interp_frac)
                     head_size = lerp(head.size, tail.size, head_interp_frac)
-                    if head_mask.enabled and tail_mask.enabled:
-                        head_mask.left = lerp(head_mask.left, tail_mask.left, head_interp_frac)
-                        head_mask.right = lerp(head_mask.right, tail_mask.right, head_interp_frac)
-                    # The head has passed the judge line. Blend distinct endpoint transforms at its current position.
-                    if not shared_stage_transform:
-                        head_transform @= blend_stage_transform(head_transform, tail_transform, head_interp_frac)
             else:
-                prepare_note_trajectories(head, self.head_trajectory_first, self.head_trajectory_second, time())
                 head_lane = head.visual_lane
                 head_size = head.size
-                head_visual_progress = note_visual_progress(
-                    head, self.head_trajectory_first, self.head_trajectory_second, time()
-                )
+                head_visual_progress = head.visual_progress
                 head_target_time = head.target_time
                 head_ease_frac = head.head_ease_frac
-
-            tail_ease_frac = tail.tail_ease_frac
-            if self.time_attachment_slice:
-                # Same-beat slices of time attachments use their own elevation span.
-                head_ease_frac = 0.0
-                tail_ease_frac = 1.0
-
-            elevation_preparation = alloc(ElevationTransformPreparation)
-            elevation_preparation.ready = False
-
-            def elevation_transform(interp_frac: float, elevation_frac: float) -> StageTransform:
-                if not elevation_preparation.ready:
-                    camera = current_layout_transform()
-                    elevation_preparation.projection.prepare(camera)
-                    head.prepare_elevation_transform(
-                        camera, elevation_preparation.projection, elevation_preparation.head
-                    )
-                    tail.prepare_elevation_transform(
-                        camera, elevation_preparation.projection, elevation_preparation.tail
-                    )
-                    elevation_preparation.ready = True
-                return elevation_preparation.at(interp_frac, elevation_frac)
-
             draw_connector(
                 kind=self.kind,
-                render_info=self.render_info,
                 visual_state=visual_state,
                 ease_type=self.ease_type,
                 head_lane=head_lane,
@@ -314,72 +154,20 @@ class WatchConnector(WatchArchetype):
                 head_ease_frac=head_ease_frac,
                 tail_lane=tail.visual_lane,
                 tail_size=tail.size,
-                tail_visual_progress=note_visual_progress(
-                    tail, self.tail_trajectory_first, self.tail_trajectory_second, time()
-                ),
+                tail_visual_progress=tail.visual_progress,
                 tail_target_time=tail.target_time,
-                tail_ease_frac=tail_ease_frac,
+                tail_ease_frac=tail.tail_ease_frac,
                 segment_head_target_time=segment_head.target_time,
                 segment_head_lane=segment_head.lane,
                 segment_head_alpha=segment_head.segment_alpha,
                 segment_tail_target_time=segment_tail.target_time,
                 segment_tail_alpha=segment_tail.segment_alpha,
-                layer=segment_head.segment_layer,
-                presentation=segment_head.segment_presentation,
-                bypass_tail_target_time_check=segment_head.segment_through_judge_line,
-                head_transform=head_transform,
-                tail_transform=tail_transform,
-                shared_transform=shared_stage_transform,
-                head_note_alpha=head_note_alpha,
-                tail_note_alpha=tail_note_alpha,
-                head_mask=head_mask,
-                tail_mask=tail_mask,
-                ease_over_elevation=self.ease_over_elevation,
-                elevation_transform=elevation_transform,
-                head_alpha_frac=head_alpha_frac,
-                tail_alpha_frac=tail_alpha_frac,
             )
-
-    def draw_fake_damage_head(self):
-        if (
-            self.render_info.base_kind != ConnectorKind.FAKE_DAMAGE
-            or self.active_head_ref.index > 0
-            or Options.disable_fake_notes
-            or not self.visual_active_interval.start <= time() < self.visual_active_interval.end
-        ):
-            return
-        lane, size = self.current_visual_head_extents()
-        if size <= 0:
-            return
-        head = self.head
-        tail = self.tail
-        frac, transform_frac = get_connector_fractions(
-            self.ease_type,
-            head.target_time,
-            head.head_ease_frac,
-            tail.target_time,
-            tail.tail_ease_frac,
-            time(),
-        )
-        transform = blend_stage_transform(head.visual_stage_transform(), tail.visual_stage_transform(), transform_frac)
-        draw_slide_note_head(
-            self.segment_head.kind,
-            cast(DamageConnectorKind, self.kind),
-            lane,
-            size,
-            self.segment_head.target_time,
-            1.0 - lerp(head.visual_y_offset, tail.visual_y_offset, frac),
-            transform=transform.to_screen_transform(),
-            note_alpha=lerp(head.visual_note_alpha, tail.visual_note_alpha, frac),
-            style=self.segment_head.style,
-        )
 
     def draw_hitbox(self):
         if not Options.show_hitboxes:
             return
-        if self.active_head_ref.index <= 0 or not should_show_connector_hitbox(
-            self.kind, base_kind=self.render_info.base_kind
-        ):
+        if self.active_head_ref.index <= 0 or not should_show_connector_hitbox(self.kind):
             return
         if time() in self.visual_active_interval:
             bounds = note.compute_slide_input_bounds(
@@ -391,34 +179,18 @@ class WatchConnector(WatchArchetype):
             )
             draw_connector_hitbox_overlay(bounds, 0.6)
 
-    def current_visual_head_extents(self) -> tuple[float, float]:
-        head = self.head
-        tail = self.tail
-        result_lane = head.visual_lane
-        result_size = head.size
-        head_mask = head.visual_mask
-        tail_mask = tail.visual_mask
-        mask_left = head_mask.left
-        mask_right = head_mask.right
-        if not is_in_step_ease(self.ease_type):
-            _, interp_frac = get_connector_fractions(
-                self.ease_type,
-                head.target_time,
-                head.head_ease_frac,
-                tail.target_time,
-                tail.tail_ease_frac,
-                time(),
-            )
-            result_lane = lerp(head.visual_lane, tail.visual_lane, interp_frac)
-            result_size = lerp(head.size, tail.size, interp_frac)
-            mask_left = lerp(head_mask.left, tail_mask.left, interp_frac)
-            mask_right = lerp(head_mask.right, tail_mask.right, interp_frac)
-        return masked_note_extents_by_limits(
-            result_lane,
-            result_size,
-            mask_left,
-            mask_right,
-            head_mask.enabled and tail_mask.enabled,
+    def get_attached_params(self, target_time: float) -> tuple[float, float]:
+        head = self.head_ref.get().effective_attach_head
+        tail = self.tail_ref.get().effective_attach_tail
+        return get_attach_params(
+            ease_type=self.ease_type,
+            head_lane=head._basic_visual_lane_at(target_time),
+            head_size=head.size,
+            head_target_time=head.target_time,
+            tail_lane=tail._basic_visual_lane_at(target_time),
+            tail_size=tail.size,
+            tail_target_time=tail.target_time,
+            target_time=target_time,
         )
 
     def schedule_sfx(self):
@@ -426,24 +198,16 @@ class WatchConnector(WatchArchetype):
             if self.head_ref.index == self.active_head_ref.index:
                 last_sfx_kind = ConnectorKind.NONE
                 last_time = -1e8
-                for next_time, next_sfx_kind in Streams.connector_effect_kinds[
-                    self.active_head_ref.index
-                ].iter_items_from(-2):
-                    if get_connector_base_kind(next_sfx_kind) == get_connector_base_kind(last_sfx_kind):
-                        continue
-                    base_kind = get_connector_base_kind(last_sfx_kind)
-                    match base_kind:
+                for next_time, next_sfx_kind in Streams.connector_kinds[self.active_head_ref.index].iter_items_from(-2):
+                    match last_sfx_kind:
                         case (
                             ConnectorKind.ACTIVE_NORMAL
                             | ConnectorKind.ACTIVE_CRITICAL
-                            | ConnectorKind.FAKE_ACTIVE_NORMAL
-                            | ConnectorKind.FAKE_ACTIVE_CRITICAL
+                            | ConnectorKind.ACTIVE_FAKE_NORMAL
+                            | ConnectorKind.ACTIVE_FAKE_CRITICAL
                         ):
                             schedule_connector_sfx(
-                                cast(ActiveConnectorKind, last_sfx_kind),
-                                self.segment_head.timescale_group,
-                                last_time,
-                                next_time,
+                                last_sfx_kind, self.segment_head.timescale_group, last_time, next_time
                             )
                         case (
                             ConnectorKind.NONE
@@ -460,20 +224,19 @@ class WatchConnector(WatchArchetype):
                         ):
                             pass
                         case _:
-                            assert_never(base_kind)
+                            assert_never(last_sfx_kind)
                     last_sfx_kind = next_sfx_kind
                     last_time = next_time
         elif self.head_ref.index == self.segment_head_ref.index:
-            base_kind = self.render_info.base_kind
-            match base_kind:
+            match self.kind:
                 case (
                     ConnectorKind.ACTIVE_NORMAL
                     | ConnectorKind.ACTIVE_CRITICAL
-                    | ConnectorKind.FAKE_ACTIVE_NORMAL
-                    | ConnectorKind.FAKE_ACTIVE_CRITICAL
+                    | ConnectorKind.ACTIVE_FAKE_NORMAL
+                    | ConnectorKind.ACTIVE_FAKE_CRITICAL
                 ):
                     schedule_connector_sfx(
-                        cast(ActiveConnectorKind, self.kind),
+                        self.kind,
                         self.segment_head.timescale_group,
                         self.segment_head.target_time,
                         self.segment_tail.target_time,
@@ -493,7 +256,7 @@ class WatchConnector(WatchArchetype):
                 ):
                     pass
                 case _:
-                    assert_never(base_kind)
+                    assert_never(self.kind)
 
     @property
     def head(self):
@@ -530,12 +293,6 @@ class WatchSlideManager(WatchArchetype):
     active_head_ref: EntityRef[note.WatchBaseNote] = entity_memory()
     active_tail_ref: EntityRef[note.WatchBaseNote] = entity_memory()
 
-    visual_lane: float = entity_memory()
-    visual_size: float = entity_memory()
-    visual_y_offset: float = entity_memory()
-    segment_head_ref: EntityRef[note.WatchBaseNote] = entity_memory()
-    segment_cursor_time: float = entity_memory()
-
     last_kind: ConnectorKind = entity_memory()
     circular_particle: ParticleHandle = entity_memory()
     linear_particle: ParticleHandle = entity_memory()
@@ -543,8 +300,6 @@ class WatchSlideManager(WatchArchetype):
     next_slot_spawn_time: float = entity_memory()
 
     def initialize(self):
-        self.segment_head_ref @= self.active_head_ref
-        self.segment_cursor_time = -1e8
         self.next_trail_spawn_time = -1e8
         self.next_slot_spawn_time = -1e8
 
@@ -552,120 +307,90 @@ class WatchSlideManager(WatchArchetype):
         return self.active_head.target_time
 
     def despawn_time(self) -> float:
-        return slide_manager_end_time(self.active_tail)
+        return self.active_tail.despawn_time()
 
     def update_parallel(self):
-        skipping = is_skip()
-        if skipping:
+        if is_skip():
             destroy_looped_particle(self.circular_particle)
             destroy_looped_particle(self.linear_particle)
-            self.next_trail_spawn_time = time() + CONNECTOR_TRAIL_SPAWN_PERIOD / Options.effect_animation_speed
-            self.next_slot_spawn_time = time() + CONNECTOR_SLOT_SPAWN_PERIOD / Options.effect_animation_speed
-        info = self.active_head.active_connector_info
-        if info.visual_connector_index > 0 and info.visual_update_time == time():
-            connector = EntityRef[WatchConnector](index=info.visual_connector_index - 1).get()
-            visual_lane, visual_size = connector.current_visual_head_extents()
-            self.visual_lane = visual_lane
-            self.visual_size = visual_size
-            self.visual_y_offset = lerp(
-                connector.head.visual_y_offset,
-                connector.tail.visual_y_offset,
-                safe_unlerp_clamped(connector.head.target_time, connector.tail.target_time, time()),
-            )
         if time() < self.active_head.target_time:
             return
-        segment_transform, segment_note_alpha = self.active_segment_transform_and_note_alpha()
-        head_transform = segment_transform.to_screen_transform()
+        info = self.active_head.active_connector_info
+        head_transform = IDENTITY_AFFINE_TRANSFORM
         connector_kind = (
-            Streams.connector_effect_kinds[self.active_head.index].get_previous_inclusive(time())
+            Streams.connector_kinds[self.active_head.index].get_previous_inclusive(time())
             if is_replay()
             else info.connector_kind
         )
-        match get_connector_base_kind(connector_kind):
+        match connector_kind:
             case (
                 ConnectorKind.ACTIVE_NORMAL
                 | ConnectorKind.ACTIVE_CRITICAL
-                | ConnectorKind.FAKE_ACTIVE_NORMAL
-                | ConnectorKind.FAKE_ACTIVE_CRITICAL
+                | ConnectorKind.ACTIVE_FAKE_NORMAL
+                | ConnectorKind.ACTIVE_FAKE_CRITICAL
             ):
                 replace = connector_kind != self.last_kind
                 self.last_kind = connector_kind
-                if not skipping:
-                    update_circular_connector_particle(
-                        self.circular_particle,
-                        cast(ActiveConnectorKind, connector_kind),
-                        self.visual_lane,
-                        replace,
-                        self.visual_y_offset,
+                update_circular_connector_particle(
+                    self.circular_particle,
+                    connector_kind,
+                    info.visual_lane,
+                    replace,
+                    transform=head_transform,
+                )
+                update_linear_connector_particle(
+                    self.linear_particle,
+                    connector_kind,
+                    info.visual_lane,
+                    replace,
+                    transform=head_transform,
+                )
+                trail_period = CONNECTOR_TRAIL_SPAWN_PERIOD / Options.effect_animation_speed
+                if time() >= self.next_trail_spawn_time:
+                    self.next_trail_spawn_time = max(
+                        self.next_trail_spawn_time + trail_period,
+                        time() + trail_period / 2,
+                    )
+                    spawn_linear_connector_trail_particle(connector_kind, info.visual_lane, transform=head_transform)
+                slot_period = CONNECTOR_SLOT_SPAWN_PERIOD / Options.effect_animation_speed
+                if time() >= self.next_slot_spawn_time:
+                    self.next_slot_spawn_time = max(
+                        self.next_slot_spawn_time + slot_period,
+                        time() + slot_period / 2,
+                    )
+                    spawn_connector_slot_particles(
+                        connector_kind,
+                        info.visual_lane,
+                        info.visual_size,
                         transform=head_transform,
                     )
-                    update_linear_connector_particle(
-                        self.linear_particle,
-                        cast(ActiveConnectorKind, connector_kind),
-                        self.visual_lane,
-                        replace,
-                        self.visual_y_offset,
-                        transform=head_transform,
-                    )
-                    trail_period = CONNECTOR_TRAIL_SPAWN_PERIOD / Options.effect_animation_speed
-                    if time() >= self.next_trail_spawn_time:
-                        self.next_trail_spawn_time = max(
-                            self.next_trail_spawn_time + trail_period,
-                            time() + trail_period / 2,
-                        )
-                        spawn_linear_connector_trail_particle(
-                            cast(ActiveConnectorKind, connector_kind),
-                            self.visual_lane,
-                            self.visual_y_offset,
-                            transform=head_transform,
-                        )
-                    if self.visual_size > 0:
-                        slot_period = CONNECTOR_SLOT_SPAWN_PERIOD / Options.effect_animation_speed
-                        if time() >= self.next_slot_spawn_time:
-                            self.next_slot_spawn_time = max(
-                                self.next_slot_spawn_time + slot_period,
-                                time() + slot_period / 2,
-                            )
-                            spawn_connector_slot_particles(
-                                cast(ActiveConnectorKind, connector_kind),
-                                self.visual_lane,
-                                self.visual_size,
-                                self.visual_y_offset,
-                                transform=head_transform,
-                            )
-                        draw_connector_slot_glow_effect(
-                            cast(ActiveConnectorKind, connector_kind),
-                            self.active_head.target_time,
-                            self.visual_lane,
-                            self.visual_size,
-                            self.visual_y_offset,
-                            transform=head_transform,
-                        )
-                else:
-                    destroy_looped_particle(self.circular_particle)
-                    destroy_looped_particle(self.linear_particle)
+                draw_connector_slot_glow_effect(
+                    connector_kind,
+                    self.active_head.target_time,
+                    info.visual_lane,
+                    info.visual_size,
+                    transform=head_transform,
+                )
             case _:
                 destroy_looped_particle(self.circular_particle)
                 destroy_looped_particle(self.linear_particle)
-        match get_connector_base_kind(info.connector_kind):
+        match info.connector_kind:
             case (
                 ConnectorKind.ACTIVE_NORMAL
                 | ConnectorKind.ACTIVE_CRITICAL
-                | ConnectorKind.FAKE_ACTIVE_NORMAL
-                | ConnectorKind.FAKE_ACTIVE_CRITICAL
+                | ConnectorKind.ACTIVE_FAKE_NORMAL
+                | ConnectorKind.ACTIVE_FAKE_CRITICAL
                 | ConnectorKind.DAMAGE
-                | ConnectorKind.FAKE_DAMAGE
-            ) if self.visual_size > 0:
+            ):
                 draw_slide_note_head(
                     self.active_head.kind,
-                    cast(SlideConnectorKind, info.connector_kind),
-                    self.visual_lane,
-                    self.visual_size,
+                    info.connector_kind,
+                    info.visual_lane,
+                    info.visual_size,
                     self.active_head.target_time,
-                    1.0 - self.visual_y_offset,
+                    1.0,
                     transform=head_transform,
-                    note_alpha=segment_note_alpha,
-                    style=self.active_head.style,
+                    note_alpha=1.0,
                 )
             case _:
                 pass
@@ -673,40 +398,6 @@ class WatchSlideManager(WatchArchetype):
     def terminate(self):
         destroy_looped_particle(self.circular_particle)
         destroy_looped_particle(self.linear_particle)
-
-    def active_segment_transform_and_note_alpha(self) -> tuple[StageTransform, float]:
-        result = +StageTransform
-        # The cached segment is valid only while playback moves forward.
-        if is_skip() or time() < self.segment_cursor_time:
-            self.segment_head_ref @= self.active_head_ref
-        head_ref = +self.segment_head_ref
-        next_ref = +head_ref.get().next_ref
-        while next_ref.index > 0 and time() >= next_ref.get().target_time:
-            head_ref.index = next_ref.index
-            next_ref.index = head_ref.get().next_ref.index
-        self.segment_head_ref @= head_ref
-        self.segment_cursor_time = time()
-        seg_head = head_ref.get()
-        note_alpha = seg_head.visual_note_alpha
-        if next_ref.index > 0:
-            seg_tail = next_ref.get()
-            frac, transform_frac = get_connector_fractions(
-                seg_head.connector_ease,
-                seg_head.target_time,
-                seg_head.head_ease_frac,
-                seg_tail.target_time,
-                seg_tail.tail_ease_frac,
-                time(),
-            )
-            result @= blend_stage_transform(
-                seg_head.visual_stage_transform(),
-                seg_tail.visual_stage_transform(),
-                transform_frac,
-            )
-            note_alpha = lerp(seg_head.visual_note_alpha, seg_tail.visual_note_alpha, frac)
-        else:
-            result @= seg_head.visual_stage_transform()
-        return result, note_alpha
 
     @property
     def active_head(self) -> note.WatchBaseNote:

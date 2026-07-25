@@ -12,24 +12,13 @@ from sonolus.script.archetype import PlayArchetype
 from sonolus.script.level import Level, LevelData
 from sonolus.script.timing import TimescaleEase
 
-from sekai.lib.connector import ConnectorKind, ConnectorLayer, SegmentPresentation, get_connector_base_kind
-from sekai.lib.ease import EaseType, ease_overshoot
-from sekai.lib.layout import FlickDirection, StageRotationCenter, StageTransformAnchor, ZoomVerticalAlign
+from sekai.lib.connector import ConnectorKind
+from sekai.lib.ease import EaseType
+from sekai.lib.layout import FlickDirection
 from sekai.lib.level_config import EngineRevision
 from sekai.lib.note import NoteKind
-from sekai.lib.note_style import NoteStyle
-from sekai.lib.stage import DivisionParity, JudgeLineColor, JudgeLineStyle, StageBorderStyle
-from sekai.lib.timescale import TransitionStyle
 from sekai.play.bpm_change import BpmChange
 from sekai.play.connector import Connector
-from sekai.play.dynamic_stage import (
-    CameraChange,
-    DynamicStage,
-    StageMaskChange,
-    StagePivotChange,
-    StageStyleChange,
-    StageTransformChange,
-)
 from sekai.play.initialization import Initialization
 from sekai.play.note import NOTE_ARCHETYPES, BaseNote
 from sekai.play.sim_line import SimLine
@@ -54,12 +43,12 @@ _ACTIVE_HOLD_SEGMENT_KINDS = frozenset(
     {
         ConnectorKind.ACTIVE_NORMAL,
         ConnectorKind.ACTIVE_CRITICAL,
-        ConnectorKind.FAKE_ACTIVE_NORMAL,
-        ConnectorKind.FAKE_ACTIVE_CRITICAL,
+        ConnectorKind.ACTIVE_FAKE_NORMAL,
+        ConnectorKind.ACTIVE_FAKE_CRITICAL,
     }
 )
 
-# These connectors track touches using the active head and tail of their input section.
+# Segment kinds whose connectors track touches through their section's active head/tail refs.
 _INPUT_TRACKED_SEGMENT_KINDS = _ACTIVE_HOLD_SEGMENT_KINDS | {ConnectorKind.DAMAGE}
 
 _DAMAGE_TICK_STEP = 0.5
@@ -99,9 +88,8 @@ class LevelTimescaleChange:
     beat: float
     timescale: float
     timescale_skip: float = 0.0
-    timescale_ease: EaseType | TimescaleEase = EaseType.NONE
+    timescale_ease: TimescaleEase = TimescaleEase.NONE
     hide_notes: bool = False
-    transition_style: TransitionStyle = TransitionStyle.TIMESCALE
 
 
 @dataclass
@@ -111,100 +99,19 @@ class LevelTimescaleGroup:
 
 
 @dataclass
-class LevelStageMaskChange:
-    beat: float
-    lane: float
-    size: float
-    ease: EaseType = EaseType.LINEAR
-    mask_notes: bool = False
-
-
-@dataclass
-class LevelStagePivotChange:
-    beat: float
-    lane: float
-    division_size: float
-    division_parity: DivisionParity
-    abs_y_offset: float
-    y_beat_offset: float
-    ease: EaseType = EaseType.LINEAR
-
-
-@dataclass
-class LevelStageStyleChange:
-    beat: float
-    judge_line_color: JudgeLineColor
-    left_border_style: StageBorderStyle
-    right_border_style: StageBorderStyle
-    lane_alpha: float
-    judge_line_alpha: float
-    judge_line_style: JudgeLineStyle = JudgeLineStyle.DEFAULT
-    full_width: bool = False
-    alpha: float = 1.0  # Deprecated
-    division_line_alpha: float = 1.0
-    note_alpha: float = 1.0
-    lane_color: NoteStyle = NoteStyle.DEFAULT
-    ease: EaseType = EaseType.LINEAR
-
-
-@dataclass
-class LevelStageTransformChange:
-    beat: float
-    rotate: float = 0.0
-    x_lane_translate: float = 0.0
-    y_lane_translate: float = 0.0
-    anchor: StageTransformAnchor = StageTransformAnchor.DEFAULT
-    ease: EaseType = EaseType.LINEAR
-    elevation: float = 0.0
-    rotation_center: StageRotationCenter = StageRotationCenter.MASK_CENTER
-    rotation_center_x_offset: float = 0.0
-    rotation_center_y_offset: float = 0.0
-
-
-@dataclass
-class LevelStage:
-    from_start: bool = False
-    until_end: bool = False
-    mask_changes: list[LevelStageMaskChange] = field(default_factory=list)
-    pivot_changes: list[LevelStagePivotChange] = field(default_factory=list)
-    style_changes: list[LevelStageStyleChange] = field(default_factory=list)
-    transform_changes: list[LevelStageTransformChange] = field(default_factory=list)
-
-
-@dataclass
-class LevelCameraChange:
-    beat: float
-    lane: float = 0.0
-    size: float = 6.0
-    zoom: float = 1.0
-    zoom_target_lane: float = 0.0
-    zoom_target_y: float = 0.0
-    zoom_vertical_align: ZoomVerticalAlign = ZoomVerticalAlign.DEFAULT
-    rotate: float = 0.0
-    stage_tilt: float = 1.0
-    ease: EaseType = EaseType.LINEAR
-
-
-@dataclass
 class LevelNote:
     beat: float
     lane: float
     size: float
     kind: NoteKind
     timescale_group: LevelTimescaleGroup | None = None
-    stage: LevelStage | None = None
     direction: FlickDirection = FlickDirection.UP_OMNI
     is_fake: bool = False
     is_separator: bool = False
     segment_kind: ConnectorKind = ConnectorKind.NONE
     segment_alpha: float = 1.0
-    segment_layer: ConnectorLayer = ConnectorLayer.TOP
-    segment_through_judge_line: bool = False
-    segment_presentation: SegmentPresentation = SegmentPresentation.DEFAULT
     connector_ease: EaseType = EaseType.LINEAR
     attach: LevelSlide | None = None
-    style: NoteStyle = NoteStyle.DEFAULT
-    elevation: float = 0.0
 
 
 @dataclass
@@ -212,7 +119,7 @@ class LevelSlide:
     notes: list[LevelNote] = field(default_factory=list)
 
 
-type LevelEntities = LevelBpmChange | LevelTimescaleGroup | LevelNote | LevelSlide | LevelStage | LevelCameraChange
+type LevelEntities = LevelBpmChange | LevelTimescaleGroup | LevelNote | LevelSlide
 
 
 def _note_archetype_for(kind: NoteKind, is_fake: bool) -> type[PlayArchetype]:
@@ -227,12 +134,9 @@ def build_level(
     title: str,
     bgm: Asset | None,
     entities: list[LevelEntities],
-    revision: EngineRevision = EngineRevision.LATEST,
 ) -> Level:
     bpm_changes: list[LevelBpmChange] = []
     level_ts_groups: list[LevelTimescaleGroup] = []
-    level_stages: list[LevelStage] = []
-    level_camera_changes: list[LevelCameraChange] = []
     top_notes: list[LevelNote] = []
     slides: list[LevelSlide] = []
 
@@ -241,10 +145,6 @@ def build_level(
             bpm_changes.append(entity)
         elif isinstance(entity, LevelTimescaleGroup):
             level_ts_groups.append(entity)
-        elif isinstance(entity, LevelStage):
-            level_stages.append(entity)
-        elif isinstance(entity, LevelCameraChange):
-            level_camera_changes.append(entity)
         elif isinstance(entity, LevelNote):
             top_notes.append(entity)
         elif isinstance(entity, LevelSlide):
@@ -271,14 +171,6 @@ def build_level(
             out_entities.extend(group_entities)
         return default_ts_group
 
-    stage_map: dict[int, DynamicStage] = {}
-    for level_stage in level_stages:
-        stage, stage_entities = _build_stage(level_stage)
-        stage_map[id(level_stage)] = stage
-        out_entities.extend(stage_entities)
-
-    first_camera = _build_camera_changes(level_camera_changes, out_entities)
-
     note_entities: list[BaseNote] = []
     slide_non_attached: dict[int, list[BaseNote]] = {}
 
@@ -290,19 +182,12 @@ def build_level(
             "lane": level_note.lane,
             "size": level_note.size,
             "direction": level_note.direction,
-            "style": level_note.style,
-            "elevation": level_note.elevation,
             "connector_ease": level_note.connector_ease,
             "is_separator": level_note.is_separator or force_separator,
             "segment_kind": level_note.segment_kind,
             "segment_alpha": level_note.segment_alpha,
-            "segment_layer": level_note.segment_layer,
-            "segment_through_judge_line": level_note.segment_through_judge_line,
-            "segment_presentation": level_note.segment_presentation,
             "timescale_group": ts_group.ref(),
         }
-        if level_note.stage is not None:
-            kwargs["stage_ref"] = stage_map[id(level_note.stage)].ref()
         note = cast(BaseNote, archetype_cls(**kwargs))
         note_entities.append(note)
         out_entities.append(note)
@@ -352,19 +237,11 @@ def build_level(
                 segment_head_ref=seg_head.ref(),
                 segment_tail_ref=seg_tail.ref(),
             )
-            if get_connector_base_kind(seg_kind) in _INPUT_TRACKED_SEGMENT_KINDS:
+            if seg_kind in _INPUT_TRACKED_SEGMENT_KINDS:
                 section_head_idx, section_tail_idx = section_by_span_head[seg_head_idx]
                 connector.active_head_ref = built[section_head_idx].ref()
                 connector.active_tail_ref = built[section_tail_idx].ref()
             out_entities.append(connector)
-
-        # Link each tracked slide span to its active head.
-        for span_head_idx, span_tail_idx in itertools.pairwise(separator_indices):
-            if get_connector_base_kind(slide.notes[span_head_idx].segment_kind) not in _INPUT_TRACKED_SEGMENT_KINDS:
-                continue
-            section_head_idx = section_by_span_head[span_head_idx][0]
-            for note_idx in range(span_head_idx, span_tail_idx + 1):
-                built[note_idx].active_head_ref = built[section_head_idx].ref()
 
         _emit_damage_ticks(slide, built, non_attached, separator_indices, emit_note)
 
@@ -388,11 +265,9 @@ def build_level(
     _emit_sim_lines(note_entities, out_entities)
 
     initialization = Initialization(
-        revision=revision,
+        revision=EngineRevision.LATEST,
         initial_life=1000,
     )
-    if first_camera is not None:
-        initialization.first_camera_ref = first_camera.ref()
     out_entities.insert(0, initialization)
 
     sorted_entities = sorted(
@@ -412,23 +287,22 @@ def build_level(
 
 
 def _input_section_bounds(notes: list[LevelNote], separator_indices: list[int]) -> dict[int, tuple[int, int]]:
-    """Find the input section containing each span between separators.
+    """Map each separator span's head index to the separator indices bounding its input section.
 
-    The result maps each span's head index to the head and tail indices of its section.
-    Group consecutive spans only when they are all real holds, all fake holds, or all damage.
-    This lets a hold continue through separators and lets consecutive damage segments show a
-    shared touched state.
+    Consecutive spans whose kinds share an input class (active hold, or damage) form one section
+    with a single active head/tail, so e.g. an active slide with mid-slide separators is one hold
+    and a multi-segment damage slide shows its touched state as a whole.
     """
 
     def input_class(kind: ConnectorKind) -> int:
-        # Fake holds are always active. Give them a separate class so sharing a head cannot mark
-        # a real hold as active too.
-        match get_connector_base_kind(kind):
+        # Fake actives get their own class: sharing a head with a real hold would leak their
+        # forced-active state onto it.
+        match kind:
             case ConnectorKind.ACTIVE_NORMAL | ConnectorKind.ACTIVE_CRITICAL:
                 return 1
             case ConnectorKind.DAMAGE:
                 return 2
-            case ConnectorKind.FAKE_ACTIVE_NORMAL | ConnectorKind.FAKE_ACTIVE_CRITICAL:
+            case ConnectorKind.ACTIVE_FAKE_NORMAL | ConnectorKind.ACTIVE_FAKE_CRITICAL:
                 return 3
             case _:
                 return 0
@@ -456,10 +330,9 @@ def _emit_damage_ticks(
 ) -> None:
     """Emit a TransientHiddenDamageTickNote every half beat over each DAMAGE segment of the slide.
 
-    Ticks include segment endpoints on the half-beat grid, except for the slide's first beat.
-    When two damage segments share an endpoint, only the earlier segment emits its tick.
-    If a sequence of damage segments ends between grid beats, add a tick at its final beat
-    to cover the time after the last grid tick's window.
+    Ticks cover both segment endpoints, except that the slide's very first beat never gets a tick
+    and a damage->damage joint is emitted once, by the earlier segment. A damage run ending off the
+    half-beat grid gets a tick at its final beat, since no grid tick's window covers that stretch.
     """
     spans = list(itertools.pairwise(separator_indices))
     section_by_span_head = _input_section_bounds(slide.notes, separator_indices)
@@ -472,7 +345,6 @@ def _emit_damage_ticks(
                 lane=0.0,
                 size=0.0,
                 kind=NoteKind.HIDE_DAMAGE_TICK,
-                style=head_ln.style,
                 timescale_group=head_ln.timescale_group,
                 is_fake=head_ln.is_fake,
             )
@@ -485,17 +357,13 @@ def _emit_damage_ticks(
 
     for span_i, (span_head_idx, span_tail_idx) in enumerate(spans):
         head_ln = slide.notes[span_head_idx]
-        if get_connector_base_kind(head_ln.segment_kind) != ConnectorKind.DAMAGE:
+        if head_ln.segment_kind != ConnectorKind.DAMAGE:
             continue
         head_beat = head_ln.beat
         tail_beat = slide.notes[span_tail_idx].beat
-        prev_is_damage = (
-            span_i > 0
-            and get_connector_base_kind(slide.notes[spans[span_i - 1][0]].segment_kind) == ConnectorKind.DAMAGE
-        )
+        prev_is_damage = span_i > 0 and slide.notes[spans[span_i - 1][0]].segment_kind == ConnectorKind.DAMAGE
         next_is_damage = (
-            span_i + 1 < len(spans)
-            and get_connector_base_kind(slide.notes[spans[span_i + 1][0]].segment_kind) == ConnectorKind.DAMAGE
+            span_i + 1 < len(spans) and slide.notes[spans[span_i + 1][0]].segment_kind == ConnectorKind.DAMAGE
         )
         section_head_idx = section_by_span_head[span_head_idx][0]
         first_step = math.ceil(head_beat / _DAMAGE_TICK_STEP - _BEAT_EPSILON)
@@ -512,10 +380,7 @@ def _emit_damage_ticks(
 
 
 def _bracketing_non_attached(non_attached: list[BaseNote], beat: float) -> tuple[BaseNote, BaseNote]:
-    """Find the two consecutive non-attached joints around the beat.
-
-    At an exact joint, use that joint and the next one. At the slide's end, use the last two joints.
-    """
+    """Find the consecutive non-attached joints enclosing the beat, attaching backward only at the slide's end."""
     attach_tail: BaseNote | None = None
     for cand in non_attached:
         if cand.beat > beat + _BEAT_EPSILON:
@@ -537,19 +402,6 @@ def _build_timescale_group(
 ) -> tuple[TimescaleGroup, list[PlayArchetype]]:
     if not level_group.changes:
         raise ValueError("LevelTimescaleGroup must have at least one change")
-    if not math.isfinite(level_group.force_note_speed):
-        raise ValueError("Timescale group force_note_speed must be finite")
-    for index, change in enumerate(level_group.changes):
-        for name in ("beat", "timescale", "timescale_skip"):
-            if not math.isfinite(getattr(change, name)):
-                raise ValueError(f"Timescale change {index}: {name} must be finite")
-        try:
-            EaseType(change.timescale_ease)
-            TransitionStyle(change.transition_style)
-        except (ValueError, TypeError) as exc:
-            raise ValueError(f"Timescale change {index}: unknown easing or transition style") from exc
-        if ease_overshoot(EaseType(change.timescale_ease)) > 0:
-            raise ValueError(f"Timescale change {index}: back and elastic easing are not supported")
     group = TimescaleGroup(force_note_speed=level_group.force_note_speed)
     change_entities: list[TimescaleChange] = []
     for level_change in sorted(level_group.changes, key=lambda c: c.beat):
@@ -558,131 +410,14 @@ def _build_timescale_group(
             timescale=level_change.timescale,
             timescale_skip=level_change.timescale_skip,
             timescale_group=group.ref(),
-            timescale_ease=EaseType(level_change.timescale_ease),
+            timescale_ease=level_change.timescale_ease,
             hide_notes=level_change.hide_notes,
-            transition_style=level_change.transition_style,
         )
         if change_entities:
             change_entities[-1].next_ref = change.ref()
         change_entities.append(change)
     group.first_ref = change_entities[0].ref()
     return group, [group, *change_entities]
-
-
-def _build_stage(level_stage: LevelStage) -> tuple[DynamicStage, list[PlayArchetype]]:
-    stage = DynamicStage(from_start=level_stage.from_start, until_end=level_stage.until_end)
-    extra: list[PlayArchetype] = [stage]
-
-    mask_events = [
-        StageMaskChange(
-            stage_ref=stage.ref(),
-            beat=m.beat,
-            lane=m.lane,
-            size=m.size,
-            mask_notes=m.mask_notes,
-            ease=m.ease,
-        )
-        for m in sorted(level_stage.mask_changes, key=lambda c: c.beat)
-    ]
-    _chain_next_refs(mask_events)
-    if mask_events:
-        stage.first_mask_change_ref = mask_events[0].ref()
-    extra.extend(mask_events)
-
-    pivot_events = [
-        StagePivotChange(
-            stage_ref=stage.ref(),
-            beat=p.beat,
-            lane=p.lane,
-            division_size=p.division_size,
-            division_parity=p.division_parity,
-            abs_y_offset=p.abs_y_offset,
-            y_beat_offset=p.y_beat_offset,
-            ease=p.ease,
-        )
-        for p in sorted(level_stage.pivot_changes, key=lambda c: c.beat)
-    ]
-    _chain_next_refs(pivot_events)
-    if pivot_events:
-        stage.first_pivot_change_ref = pivot_events[0].ref()
-    extra.extend(pivot_events)
-
-    style_events = [
-        StageStyleChange(
-            stage_ref=stage.ref(),
-            beat=s.beat,
-            lane_color=s.lane_color,
-            judge_line_color=s.judge_line_color,
-            judge_line_style=s.judge_line_style,
-            left_border_style=s.left_border_style,
-            right_border_style=s.right_border_style,
-            full_width=s.full_width,
-            alpha=s.alpha,
-            lane_alpha=s.lane_alpha,
-            judge_line_alpha=s.judge_line_alpha,
-            division_line_alpha=s.division_line_alpha,
-            note_alpha=s.note_alpha,
-            ease=s.ease,
-        )
-        for s in sorted(level_stage.style_changes, key=lambda c: c.beat)
-    ]
-    _chain_next_refs(style_events)
-    if style_events:
-        stage.first_style_change_ref = style_events[0].ref()
-    extra.extend(style_events)
-
-    transform_events = [
-        StageTransformChange(
-            stage_ref=stage.ref(),
-            beat=tr.beat,
-            rotate=tr.rotate,
-            x_lane_translate=tr.x_lane_translate,
-            y_lane_translate=tr.y_lane_translate,
-            elevation=tr.elevation,
-            anchor=tr.anchor,
-            rotation_center=tr.rotation_center,
-            rotation_center_x_offset=tr.rotation_center_x_offset,
-            rotation_center_y_offset=tr.rotation_center_y_offset,
-            ease=tr.ease,
-        )
-        for tr in sorted(level_stage.transform_changes, key=lambda c: c.beat)
-    ]
-    _chain_next_refs(transform_events)
-    if transform_events:
-        stage.first_transform_change_ref = transform_events[0].ref()
-    extra.extend(transform_events)
-
-    return stage, extra
-
-
-def _build_camera_changes(
-    level_cameras: list[LevelCameraChange], out_entities: list[PlayArchetype]
-) -> CameraChange | None:
-    if not level_cameras:
-        return None
-    camera_entities = [
-        CameraChange(
-            beat=c.beat,
-            lane=c.lane,
-            size=c.size,
-            zoom=c.zoom,
-            zoom_target_lane=c.zoom_target_lane,
-            zoom_target_y=c.zoom_target_y,
-            zoom_vertical_align=c.zoom_vertical_align,
-            rotate=c.rotate,
-            stage_tilt=c.stage_tilt,
-            ease=c.ease,
-        )
-        for c in sorted(level_cameras, key=lambda c: c.beat)
-    ]
-    _chain_next_refs(camera_entities)
-    out_entities.extend(camera_entities)
-    return camera_entities[0]
-
-
-def _chain_next_refs(events: list) -> None:
-    for i in range(len(events) - 1):
-        events[i].next_ref = events[i + 1].ref()
 
 
 def _emit_sim_lines(note_entities: list[BaseNote], out_entities: list[PlayArchetype]) -> None:

@@ -14,14 +14,6 @@ npm install @next-sekai/sonolus-next-sekai-engine
 
 Package version.
 
-### `engineFullName`
-
-Engine full name.
-
-### `engineShortName`
-
-Engine short name.
-
 ### `databaseEngineItem`
 
 Partial database engine item compatible with [sonolus-express](https://github.com/Sonolus/sonolus-express).

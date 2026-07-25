@@ -12,7 +12,6 @@ from sonolus.script.runtime import HorizontalAlign, ScrollDirection, canvas, scr
 from sonolus.script.vec import Vec2
 
 from sekai.lib.layout import NOTE_EDGE_W, NOTE_SLIM_EDGE_W, FlickDirection
-from sekai.lib.level_config import LevelConfig
 from sekai.lib.options import Options
 
 PREVIEW_COLUMN_SECS = 2
@@ -30,17 +29,10 @@ PREVIEW_BAR_LINE_H = PREVIEW_LANE_W / 20
 PREVIEW_BAR_LINE_ALPHA = 0.8
 
 PREVIEW_CLASSIC_BASE_LANE_COUNT = 12
-PREVIEW_DYNAMIC_STAGE_BASE_LANE_COUNT = 20
 PREVIEW_CLASSIC_COLUMN_WIDTH = 2 * (PREVIEW_MARGIN_X + PREVIEW_LANE_W * PREVIEW_CLASSIC_BASE_LANE_COUNT / 2)
-PREVIEW_DYNAMIC_STAGE_COLUMN_WIDTH = 2 * (PREVIEW_MARGIN_X + PREVIEW_LANE_W * PREVIEW_DYNAMIC_STAGE_BASE_LANE_COUNT / 2)
 PREVIEW_CLASSIC_LANE_BOUND = (
     PREVIEW_CLASSIC_BASE_LANE_COUNT / 2 + (PREVIEW_MARGIN_X - PREVIEW_EXTEND_MARGIN_X) / PREVIEW_LANE_W
 )
-PREVIEW_DYNAMIC_STAGE_LANE_BOUND = (
-    PREVIEW_DYNAMIC_STAGE_BASE_LANE_COUNT / 2 + (PREVIEW_MARGIN_X - PREVIEW_EXTEND_MARGIN_X) / PREVIEW_LANE_W
-)
-
-PREVIEW_CAMERA_MARKER_ALPHA = 0.6
 
 PREVIEW_COVER_ALPHA = 1.0
 
@@ -48,18 +40,9 @@ PREVIEW_Y_MIN = -1 + PREVIEW_MARGIN_Y
 PREVIEW_Y_MAX = 1 - PREVIEW_MARGIN_Y
 
 PREVIEW_BAR_EXTEND_W = 4.5 * PREVIEW_LANE_W
-PREVIEW_DYNAMIC_BAR_EXTEND_W = 4 * PREVIEW_LANE_W
 
 PREVIEW_TEXT_H = 0.11
 PREVIEW_TEXT_W = 3.5 * PREVIEW_LANE_W - 2 * PREVIEW_TEXT_MARGIN_X
-
-PREVIEW_DYNAMIC_STAGE_TIME_INCREMENT = 1 / 60
-PREVIEW_DYNAMIC_STAGE_BSEARCH_ITERS = 6
-PREVIEW_DYNAMIC_STAGE_BORDER_DEFAULT_W = 0.15
-PREVIEW_DYNAMIC_STAGE_BORDER_MEDIUM_W = 0.075
-PREVIEW_DYNAMIC_STAGE_BORDER_LIGHT_W = 0.075
-PREVIEW_DYNAMIC_STAGE_DIVIDER_W = 0.075
-PREVIEW_DYNAMIC_STAGE_EPS = 0.001
 
 
 @level_data
@@ -79,13 +62,9 @@ class PreviewLayout:
 
 def init_preview_layout():
     PreviewLayout.column_count = time_to_preview_col(PreviewData.max_time) + 1
-    PreviewLayout.column_width = (
-        PREVIEW_DYNAMIC_STAGE_COLUMN_WIDTH if LevelConfig.dynamic_stages else PREVIEW_CLASSIC_COLUMN_WIDTH
-    )
+    PreviewLayout.column_width = PREVIEW_CLASSIC_COLUMN_WIDTH
     PreviewLayout.visible_secs = PreviewLayout.column_count * PREVIEW_COLUMN_SECS
-    PreviewLayout.lane_bound = (
-        PREVIEW_DYNAMIC_STAGE_LANE_BOUND if LevelConfig.dynamic_stages else PREVIEW_CLASSIC_LANE_BOUND
-    )
+    PreviewLayout.lane_bound = PREVIEW_CLASSIC_LANE_BOUND
 
     canvas().update(
         scroll_direction=ScrollDirection.LEFT_TO_RIGHT,
@@ -240,19 +219,6 @@ def layout_preview_tick(lane: float, col: int, y: float) -> Rect:
     return Rect.from_center(center, Vec2(PREVIEW_NOTE_H, PREVIEW_NOTE_H) * 2)
 
 
-def layout_preview_camera_jump_connector(lane_lo: float, lane_hi: float, time: float, width: float, col: int) -> Quad:
-    half_h = width / 2 * PREVIEW_LANE_W
-    y = time_to_preview_y(time, col)
-    x_lo = lane_to_preview_x(lane_lo, col)
-    x_hi = lane_to_preview_x(lane_hi, col)
-    return Quad(
-        bl=Vec2(x_lo, y - half_h),
-        br=Vec2(x_hi, y - half_h),
-        tr=Vec2(x_hi, y + half_h),
-        tl=Vec2(x_lo, y + half_h),
-    )
-
-
 def layout_preview_flick_arrow(lane: float, size: float, direction: FlickDirection, col: int, y: float) -> Rect:
     match direction:
         case FlickDirection.UP_OMNI:
@@ -386,8 +352,6 @@ def layout_preview_bar_line(
         "right_only",
         "left_in",
         "right_in",
-        "left_dynamic",
-        "right_dynamic",
     ],
     extend_scale: float = 1.0,
 ) -> Quad:
@@ -419,12 +383,6 @@ def layout_preview_bar_line(
         case "right_in":
             right_x = column_right_x - PREVIEW_LANE_W * 0.5
             left_x = right_x - PREVIEW_BAR_EXTEND_W * extend_scale
-        case "left_dynamic":
-            left_x = column_left_x + PREVIEW_LANE_W * 0.5
-            right_x = left_x + PREVIEW_DYNAMIC_BAR_EXTEND_W
-        case "right_dynamic":
-            right_x = column_right_x - PREVIEW_LANE_W * 0.5
-            left_x = right_x - PREVIEW_DYNAMIC_BAR_EXTEND_W
         case _:
             pass
     y = time_to_preview_y(time, col)
@@ -436,16 +394,6 @@ def layout_preview_bar_line(
     )
 
 
-def layout_preview_column_divider(col: int) -> Rect:
-    x = lane_to_preview_x(0, col) - PreviewLayout.column_width / 2
-    return Rect(
-        l=x - PREVIEW_BAR_LINE_H,
-        r=x + PREVIEW_BAR_LINE_H,
-        b=PREVIEW_Y_MIN,
-        t=PREVIEW_Y_MAX,
-    )
-
-
 def print_at_time(
     value: float,
     time: float,
@@ -454,32 +402,14 @@ def print_at_time(
     decimal_places: int = -1,
     color: PrintColor,
     side: Literal["left", "right"],
-    dynamic: bool = False,
 ):
     col = time_to_preview_col(time)
     y = time_to_preview_y(time, col)
-    if dynamic:
-        # Anchored at the inner end of the line that hugs the column edge,
-        # with text aligned toward the column edge so it grows away from the stage.
-        column_center_x = lane_to_preview_x(0, col)
-        column_left_x = column_center_x - PreviewLayout.column_width / 2
-        column_right_x = column_center_x + PreviewLayout.column_width / 2
-        if side == "left":
-            anchor_x = column_left_x + PREVIEW_LANE_W * 0.5 + PREVIEW_DYNAMIC_BAR_EXTEND_W - PREVIEW_TEXT_MARGIN_X
-            pivot_x = 1.0
-            align = HorizontalAlign.RIGHT
-        else:
-            anchor_x = column_right_x - PREVIEW_LANE_W * 0.5 - PREVIEW_DYNAMIC_BAR_EXTEND_W + PREVIEW_TEXT_MARGIN_X
-            pivot_x = 0.0
-            align = HorizontalAlign.LEFT
-    else:
-        anchor_x = lane_to_preview_x(-6 if side == "left" else 6, col) + (
-            PREVIEW_TEXT_MARGIN_X - PREVIEW_BAR_EXTEND_W
-            if side == "left"
-            else PREVIEW_BAR_EXTEND_W - PREVIEW_TEXT_MARGIN_X
-        )
-        pivot_x = 0.0 if side == "left" else 1.0
-        align = HorizontalAlign.LEFT if side == "left" else HorizontalAlign.RIGHT
+    anchor_x = lane_to_preview_x(-6 if side == "left" else 6, col) + (
+        PREVIEW_TEXT_MARGIN_X - PREVIEW_BAR_EXTEND_W if side == "left" else PREVIEW_BAR_EXTEND_W - PREVIEW_TEXT_MARGIN_X
+    )
+    pivot_x = 0.0 if side == "left" else 1.0
+    align = HorizontalAlign.LEFT if side == "left" else HorizontalAlign.RIGHT
     print_number(
         value=value,
         fmt=fmt,

@@ -8,18 +8,14 @@ from sekai.lib.options import Options, ScoreMode
 class EngineRevision(IntEnum):
     BASE = 0
     SONOLUS_1_1_0 = 1
-    APPARENT_ELEVATION = 2
 
-    LATEST = 2
+    LATEST = 1
 
 
 @level_data
 class LevelConfig:
     revision: EngineRevision
     score_mode: ScoreMode
-    dynamic_stages: bool
-    has_stage_transforms: bool
-    skip_default_stage: bool
 
 
 def init_level_config(

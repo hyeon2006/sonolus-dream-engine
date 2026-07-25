@@ -3,17 +3,20 @@ from __future__ import annotations
 from typing import cast
 
 from sonolus.script.archetype import EntityRef, PreviewArchetype, StandardImport, entity_data, imported
-from sonolus.script.interval import lerp
+from sonolus.script.interval import lerp, unlerp_clamped
 from sonolus.script.sprite import Sprite
 from sonolus.script.timing import beat_to_time
 
-from sekai.lib.connector import ConnectorKind, ConnectorLayer, SegmentPresentation
+from sekai.lib.connector import ConnectorKind
 from sekai.lib.ease import EaseType, ease
-from sekai.lib.layer import get_z, layers
+from sekai.lib.layer import (
+    LAYER_NOTE_ARROW,
+    LAYER_NOTE_TICK,
+    get_z,
+)
 from sekai.lib.layout import FlickDirection
 from sekai.lib.note import (
     NoteKind,
-    get_attach_frac_for_note,
     get_attach_params,
     get_note_body_layer,
     get_note_sprite_set,
@@ -21,18 +24,9 @@ from sekai.lib.note import (
     map_note_kind,
     mirror_flick_direction,
 )
-from sekai.lib.note_style import NoteStyle
 from sekai.lib.options import Options
 from sekai.lib.skin import ArrowRenderType, ArrowSpriteSet, BodyRenderType, BodySpriteSet
-from sekai.lib.stage import (
-    VisualMask,
-    get_next_event_time,
-    get_stage_props,
-    interpolate_visual_masks,
-    masked_note_extents_by_limits,
-)
 from sekai.play.note import derive_note_archetypes
-from sekai.preview.dynamic_stage import PreviewDynamicStage
 from sekai.preview.layout import (
     PreviewData,
     get_adjusted_time,
@@ -50,20 +44,14 @@ from sekai.preview.layout import (
 
 class PreviewBaseNote(PreviewArchetype):
     beat: StandardImport.BEAT
-    stage_ref: EntityRef[PreviewDynamicStage] = imported(name="stage")
     lane: float = imported()
     size: float = imported()
-    elevation: float = imported(default=0.0)
     direction: FlickDirection = imported()
-    style: NoteStyle = imported()
     active_head_ref: EntityRef[PreviewBaseNote] = imported(name="activeHead")
     is_attached: bool = imported(name="isAttached")
     connector_ease: EaseType = imported(name="connectorEase")
     segment_kind: ConnectorKind = imported(name="segmentKind")
     segment_alpha: float = imported(name="segmentAlpha")
-    segment_layer: ConnectorLayer = imported(name="segmentLayer")
-    segment_through_judge_line: bool = imported(name="segmentThroughJudgeLine")
-    segment_presentation: SegmentPresentation = imported(name="segmentPresentation")
     attach_head_ref: EntityRef[PreviewBaseNote] = imported(name="attachHead")
     attach_tail_ref: EntityRef[PreviewBaseNote] = imported(name="attachTail")
     next_ref: EntityRef[PreviewBaseNote] = imported(name="next")
@@ -71,7 +59,6 @@ class PreviewBaseNote(PreviewArchetype):
 
     kind: NoteKind = entity_data()
     data_init_done: bool = entity_data()
-    rel_lane: float = entity_data()
     target_time: float = entity_data()
 
     def init_data(self):
@@ -87,11 +74,6 @@ class PreviewBaseNote(PreviewArchetype):
             self.direction = mirror_flick_direction(self.direction)
 
         self.target_time = beat_to_time(self.beat)
-
-        if self.stage_ref.index > 0:
-            props = get_stage_props(self.stage_ref.get(), self.target_time)
-            self.rel_lane = self.lane
-            self.lane += props.pivot_lane + props.x_lane_translate
 
         if self.next_ref.index > 0:
             self.next_ref.get().prev_ref = self.ref()
@@ -114,7 +96,6 @@ class PreviewBaseNote(PreviewArchetype):
                 tail_size=attach_tail.size,
                 tail_target_time=attach_tail.target_time,
                 target_time=self.target_time,
-                fraction=self.head_ease_frac,
             )
             self.lane = lane
             self.size = size
@@ -127,27 +108,17 @@ class PreviewBaseNote(PreviewArchetype):
                 PreviewData.note_counts_by_col[col] += 1
 
     def render(self):
+        if abs(self.lane) > 12:
+            return
         if not self.is_scored:
             return
-        render_lane, render_size = self.visual_extents_at(self.target_time)
-        if abs(render_lane) > 12 or render_size <= 0:
-            return
-        draw_note(self.kind, render_lane, render_size, self.direction, self.target_time, self.style)
+        draw_note(self.kind, self.lane, self.size, self.direction, self.target_time)
 
     @property
     def head_ease_frac(self) -> float:
         if self.is_attached:
-            head = self.attach_head_ref.get()
-            tail = self.attach_tail_ref.get()
-            return get_attach_frac_for_note(
-                head.beat,
-                tail.beat,
-                head.target_time,
-                tail.target_time,
-                self.target_time,
-                head.elevation,
-                tail.elevation,
-                self.elevation,
+            return unlerp_clamped(
+                self.attach_head_ref.get().target_time, self.attach_tail_ref.get().target_time, self.target_time
             )
         else:
             return 0.0
@@ -155,96 +126,30 @@ class PreviewBaseNote(PreviewArchetype):
     @property
     def tail_ease_frac(self) -> float:
         if self.is_attached:
-            head = self.attach_head_ref.get()
-            tail = self.attach_tail_ref.get()
-            return get_attach_frac_for_note(
-                head.beat,
-                tail.beat,
-                head.target_time,
-                tail.target_time,
-                self.target_time,
-                head.elevation,
-                tail.elevation,
-                self.elevation,
+            return unlerp_clamped(
+                self.attach_head_ref.get().target_time, self.attach_tail_ref.get().target_time, self.target_time
             )
         else:
             return 1.0
 
-    def _basic_visual_lane_at(self, t: float, right_limit: bool = False, exact: bool = False) -> float:
-        if self.stage_ref.index <= 0:
-            return self.lane
-        props = get_stage_props(self.stage_ref.get(), t, right_limit=right_limit, exact=exact)
-        return props.pivot_lane + self.rel_lane + props.x_lane_translate
+    def _basic_visual_lane_at(self, t: float) -> float:
+        return self.lane
 
-    def visual_lane_at(self, t: float, right_limit: bool = False, exact: bool = False) -> float:
+    def visual_lane_at(self, t: float) -> float:
         if self.is_attached:
             head = self.attach_head_ref.get()
             tail = self.attach_tail_ref.get()
-            head_lane = head._basic_visual_lane_at(t, right_limit=right_limit, exact=exact)
-            tail_lane = tail._basic_visual_lane_at(t, right_limit=right_limit, exact=exact)
-            return lerp(
-                head_lane,
-                tail_lane,
-                ease(self.connector_ease, self.head_ease_frac),
-            )
-        return self._basic_visual_lane_at(t, right_limit=right_limit, exact=exact)
-
-    def _basic_visual_mask_at(self, t: float, right_limit: bool = False, exact: bool = False) -> VisualMask:
-        result = +VisualMask
-        if self.stage_ref.index > 0:
-            props = get_stage_props(self.stage_ref.get(), t, right_limit=right_limit, exact=exact)
-            result.left = props.lane - props.width + props.x_lane_translate
-            result.right = props.lane + props.width + props.x_lane_translate
-            result.enabled = props.mask_notes
-            if result.enabled:
-                result.stage_index = self.stage_ref.index
-        return result
-
-    def visual_mask_at(self, t: float, right_limit: bool = False, exact: bool = False) -> VisualMask:
-        result = +VisualMask
-        if not self.is_attached:
-            result @= self._basic_visual_mask_at(t, right_limit=right_limit, exact=exact)
-            return result
-
-        head = self.attach_head_ref.get()
-        tail = self.attach_tail_ref.get()
-        result @= interpolate_visual_masks(
-            head._basic_visual_mask_at(t, right_limit=right_limit, exact=exact),
-            tail._basic_visual_mask_at(t, right_limit=right_limit, exact=exact),
-            ease(self.connector_ease, self.head_ease_frac),
-        )
-        return result
-
-    def visual_extents_at(self, t: float) -> tuple[float, float]:
-        render_lane = self.visual_lane_at(t)
-        mask = self.visual_mask_at(t)
-        return masked_note_extents_by_limits(render_lane, self.size, mask.left, mask.right, mask.enabled)
-
-    def _basic_next_visual_mask_event_time(self, t: float) -> float:
-        if self.stage_ref.index <= 0:
-            return 1e8
-        return get_next_event_time(self.stage_ref.get(), t)
-
-    def next_visual_mask_event_time(self, t: float) -> float:
-        if not self.is_attached:
-            return self._basic_next_visual_mask_event_time(t)
-        return min(
-            self.attach_head_ref.get()._basic_next_visual_mask_event_time(t),
-            self.attach_tail_ref.get()._basic_next_visual_mask_event_time(t),
-        )
+            note_ease_frac = unlerp_clamped(head.target_time, tail.target_time, self.target_time)
+            head_lane = head._basic_visual_lane_at(t)
+            tail_lane = tail._basic_visual_lane_at(t)
+            return lerp(head_lane, tail_lane, ease(self.connector_ease, note_ease_frac))
+        return self._basic_visual_lane_at(t)
 
 
-def draw_note(
-    kind: NoteKind,
-    lane: float,
-    size: float,
-    direction: FlickDirection,
-    target_time: float,
-    style: NoteStyle = NoteStyle.DEFAULT,
-):
+def draw_note(kind: NoteKind, lane: float, size: float, direction: FlickDirection, target_time: float):
     col = time_to_preview_col(target_time)
     y = time_to_preview_y(target_time, col)
-    sprite_set = get_note_sprite_set(kind, direction, style)
+    sprite_set = get_note_sprite_set(kind, direction)
     draw_note_body(sprite_set.body, kind, lane, size, target_time, col, y)
     draw_note_arrow(sprite_set.arrow, kind, lane, size, target_time, direction, col, y)
     draw_note_tick(sprite_set.tick, lane, target_time, col, y)
@@ -253,7 +158,8 @@ def draw_note(
 def draw_note_body(
     sprites: BodySpriteSet, kind: NoteKind, lane: float, size: float, target_time: float, col: int, y: float
 ):
-    z = get_z(get_note_body_layer(kind), time=get_adjusted_time(target_time, col), lane=lane)
+    layer = get_note_body_layer(kind)
+    z = get_z(layer, time=get_adjusted_time(target_time, col), lane=lane)
     match sprites.render_type:
         case BodyRenderType.NORMAL:
             left_layout, middle_layout, right_layout = layout_preview_regular_note_body(lane, size, col, y)
@@ -284,7 +190,7 @@ def draw_note_arrow(
     y: float,
 ):
     z = get_z(
-        layers.note_arrow,
+        LAYER_NOTE_ARROW,
         time=get_adjusted_time(target_time, col),
         lane=lane,
         etc=direction + 6 * (not is_critical(kind)),
@@ -299,7 +205,7 @@ def draw_note_arrow(
 
 
 def draw_note_tick(sprite: Sprite, lane: float, target_time: float, col: int, y: float):
-    z = get_z(layers.note_tick, time=get_adjusted_time(target_time, col), lane=lane)
+    z = get_z(LAYER_NOTE_TICK, time=get_adjusted_time(target_time, col), lane=lane)
     layout = layout_preview_tick(lane, col, y)
     sprite.draw(layout, z=z.tuple)
 
