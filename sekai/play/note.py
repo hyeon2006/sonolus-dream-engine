@@ -40,7 +40,6 @@ from sekai.lib.layout import (
 )
 from sekai.lib.note import (
     NoteKind,
-    damage_tick_input_start_beat,
     draw_hitbox_overlay,
     draw_note,
     get_attach_params,
@@ -49,7 +48,6 @@ from sekai.lib.note import (
     get_note_haptic_feedback,
     get_note_window,
     get_visual_spawn_time,
-    has_release_input,
     has_tap_input,
     hitbox_draw_alpha,
     hitbox_draw_start,
@@ -103,10 +101,8 @@ class BaseNote(PlayArchetype):
     input_interval: Interval = shared_memory()
     unadjusted_input_interval: Interval = shared_memory()
 
-    # The id of the tap that activated this note, for tap notes and flicks or released the note, for release notes.
-    # This is set by the input manager rather than the note itself.
+    # The id of the touch assigned to this tap note by the input manager.
     captured_touch_id: int = shared_memory()
-    captured_touch_time: float = shared_memory()
 
     active_connector_info: ActiveConnectorInfo = shared_memory()
 
@@ -141,14 +137,6 @@ class BaseNote(PlayArchetype):
         window = get_note_window(self.kind)
         self.input_interval = window.bad + self.target_time + input_offset()
         self.unadjusted_input_interval = window.bad + self.target_time
-
-        if self.kind == NoteKind.HIDE_DAMAGE_TICK:
-            window_start_beat = damage_tick_input_start_beat(self.beat)
-            if self.active_head_ref.index > 0:
-                window_start_beat = max(window_start_beat, self.active_head_ref.get().beat)
-            window_start_time = beat_to_time(window_start_beat)
-            self.input_interval = Interval(window_start_time, self.target_time) + input_offset()
-            self.unadjusted_input_interval = Interval(window_start_time, self.target_time)
 
         if not self.is_attached:
             self.target_scaled_time = group_time_to_scaled_time(self.timescale_group, self.target_time)
@@ -216,25 +204,19 @@ class BaseNote(PlayArchetype):
 
         update_timescale_group(self.timescale_group)
 
-        if self.kind == NoteKind.HIDE_DAMAGE_TICK and self.is_scored and time() in self.input_interval:
-            self.hitbox.bounds @= self.damage_tick_input_bounds(offset_adjusted_time())
-
         if self.should_do_delayed_trigger():
             if self.best_touch_matches_direction:
                 self.judge(self.best_touch_time)
             else:
                 self.judge_wrong_way(self.best_touch_time)
             return
-        if self.is_scored and time() in self.input_interval and self.captured_touch_id == 0:
-            if has_tap_input(self.kind):
-                NoteMemory.active_tap_input_notes.append(self.ref())
-            elif has_release_input(self.kind) and (
-                self.active_head_ref.index <= 0
-                or self.active_head_ref.get().is_despawned
-                or self.active_head_ref.get().captured_touch_id != 0
-                or not self.active_head_ref.get().is_scored
-            ):
-                NoteMemory.active_release_input_notes.append(self.ref())
+        if (
+            self.is_scored
+            and time() in self.input_interval
+            and self.captured_touch_id == 0
+            and has_tap_input(self.kind)
+        ):
+            NoteMemory.active_tap_input_notes.append(self.ref())
 
     def touch(self):
         if not self.is_scored:
@@ -245,52 +227,21 @@ class BaseNote(PlayArchetype):
             return
         kind = self.kind
         match kind:
-            case (
-                NoteKind.NORM_TAP
-                | NoteKind.CRIT_TAP
-                | NoteKind.NORM_HEAD_TAP
-                | NoteKind.CRIT_HEAD_TAP
-                | NoteKind.NORM_TAIL_TAP
-                | NoteKind.CRIT_TAIL_TAP
-            ):
+            case NoteKind.NORM_TAP | NoteKind.CRIT_TAP | NoteKind.NORM_HEAD_TAP | NoteKind.CRIT_HEAD_TAP:
                 self.handle_tap_input()
-            case NoteKind.NORM_FLICK | NoteKind.CRIT_FLICK | NoteKind.NORM_HEAD_FLICK | NoteKind.CRIT_HEAD_FLICK:
-                self.handle_flick_input()
-            case (
-                NoteKind.NORM_TRACE
-                | NoteKind.CRIT_TRACE
-                | NoteKind.NORM_HEAD_TRACE
-                | NoteKind.CRIT_HEAD_TRACE
-                | NoteKind.NORM_TAIL_TRACE
-                | NoteKind.CRIT_TAIL_TRACE
-            ):
+            case NoteKind.NORM_TAIL_TRACE | NoteKind.CRIT_TAIL_TRACE:
                 self.handle_trace_input()
             case (
                 NoteKind.NORM_TRACE_FLICK
                 | NoteKind.CRIT_TRACE_FLICK
-                | NoteKind.NORM_HEAD_TRACE_FLICK
-                | NoteKind.CRIT_HEAD_TRACE_FLICK
                 | NoteKind.NORM_TAIL_FLICK
                 | NoteKind.CRIT_TAIL_FLICK
-                | NoteKind.NORM_TAIL_TRACE_FLICK
-                | NoteKind.CRIT_TAIL_TRACE_FLICK
             ):
                 self.handle_trace_flick_input()
-            case (
-                NoteKind.NORM_RELEASE
-                | NoteKind.CRIT_RELEASE
-                | NoteKind.NORM_HEAD_RELEASE
-                | NoteKind.CRIT_HEAD_RELEASE
-                | NoteKind.NORM_TAIL_RELEASE
-                | NoteKind.CRIT_TAIL_RELEASE
-            ):
-                self.handle_release_input()
             case NoteKind.NORM_TICK | NoteKind.CRIT_TICK | NoteKind.HIDE_TICK:
                 self.handle_tick_input()
             case NoteKind.DAMAGE:
                 self.handle_damage_input()
-            case NoteKind.HIDE_DAMAGE_TICK:
-                self.handle_damage_tick_input()
             case NoteKind.ANCHOR:
                 pass
             case _:
@@ -397,38 +348,6 @@ class BaseNote(PlayArchetype):
         touch = next(tap for tap in touches() if tap.id == self.captured_touch_id)
         self.judge(touch.start_time)
 
-    def handle_release_input(self):
-        if time() > self.input_interval.end:
-            return
-        if self.captured_touch_id == 0:
-            return
-        touch = next(tap for tap in touches() if tap.id == self.captured_touch_id)
-        self.judge(touch.time)
-
-    def handle_flick_input(self):
-        if time() > self.input_interval.end:
-            return
-        if self.captured_touch_id == 0:
-            return
-
-        # Another touch is allowed to flick the note as long as it started after the start of the input interval,
-        # so we don't care which touch matched the tap id, just that the tap id is set.
-
-        for touch in touches():
-            if not self.check_touch_touch_is_eligible_for_flick(touch):
-                continue
-            if not self.check_direction_matches(touch.angle):
-                continue
-            input_manager.disallow_empty(touch)
-            self.judge(touch.time)
-            return
-        for touch in touches():
-            if not self.check_touch_touch_is_eligible_for_flick(touch):
-                continue
-            input_manager.disallow_empty(touch)
-            self.judge_wrong_way(touch.time)
-            return
-
     def handle_trace_input(self):
         if time() > self.input_interval.end:
             return
@@ -518,96 +437,30 @@ class BaseNote(PlayArchetype):
         else:
             self.complete_damage()
 
-    def handle_damage_tick_input(self):
-        if time() > self.input_interval.end:
-            return
-        has_touch = False
-        for touch in touches():
-            if not self.hitbox.bounds.contains_point(touch.position):
-                continue
-            input_manager.disallow_empty(touch)
-            has_touch = True
-        if has_touch:
-            self.fail_damage()
-
-    def damage_tick_input_bounds(self, t: float) -> Quad:
-        connection_head_ref = +EntityRef[BaseNote]
-        if self.is_attached:
-            connection_head_ref @= self.attach_head_ref
-        else:
-            connection_head_ref @= self.ref()
-        while connection_head_ref.get().prev_ref.index > 0 and connection_head_ref.get().target_time > t:
-            connection_head_ref.index = connection_head_ref.get().prev_ref.index
-        if connection_head_ref.get().next_ref.index <= 0 and connection_head_ref.get().prev_ref.index > 0:
-            connection_head_ref.index = connection_head_ref.get().prev_ref.index
-        connection_head = connection_head_ref.get()
-        result = +Quad
-        if connection_head.next_ref.index > 0:
-            result @= compute_slide_input_bounds(
-                connection_head.connector_ease,
-                connection_head,
-                connection_head.next_ref.get(),
-                t,
-                get_leniency(self.kind),
-            )
-        else:
-            result @= self.hitbox.bounds
-        return result
-
     def handle_late_miss(self):
         kind = self.kind
         match kind:
             case NoteKind.NORM_TICK | NoteKind.CRIT_TICK | NoteKind.HIDE_TICK:
                 self.fail_late(0.125)
-            case NoteKind.DAMAGE | NoteKind.HIDE_DAMAGE_TICK:
+            case NoteKind.DAMAGE:
                 self.complete_damage()
             case (
                 NoteKind.NORM_TAP
                 | NoteKind.CRIT_TAP
-                | NoteKind.NORM_FLICK
-                | NoteKind.CRIT_FLICK
-                | NoteKind.NORM_TRACE
-                | NoteKind.CRIT_TRACE
                 | NoteKind.NORM_TRACE_FLICK
                 | NoteKind.CRIT_TRACE_FLICK
-                | NoteKind.NORM_RELEASE
-                | NoteKind.CRIT_RELEASE
                 | NoteKind.NORM_HEAD_TAP
                 | NoteKind.CRIT_HEAD_TAP
-                | NoteKind.NORM_HEAD_FLICK
-                | NoteKind.CRIT_HEAD_FLICK
-                | NoteKind.NORM_HEAD_TRACE
-                | NoteKind.CRIT_HEAD_TRACE
-                | NoteKind.NORM_HEAD_TRACE_FLICK
-                | NoteKind.CRIT_HEAD_TRACE_FLICK
-                | NoteKind.NORM_HEAD_RELEASE
-                | NoteKind.CRIT_HEAD_RELEASE
-                | NoteKind.NORM_TAIL_TAP
-                | NoteKind.CRIT_TAIL_TAP
                 | NoteKind.NORM_TAIL_FLICK
                 | NoteKind.CRIT_TAIL_FLICK
                 | NoteKind.NORM_TAIL_TRACE
                 | NoteKind.CRIT_TAIL_TRACE
-                | NoteKind.NORM_TAIL_TRACE_FLICK
-                | NoteKind.CRIT_TAIL_TRACE_FLICK
-                | NoteKind.NORM_TAIL_RELEASE
-                | NoteKind.CRIT_TAIL_RELEASE
             ):
                 self.fail_late()
             case NoteKind.ANCHOR:
                 pass
             case _:
                 assert_never(kind)
-
-    def check_touch_touch_is_eligible_for_flick(self, touch: Touch) -> bool:
-        return (
-            touch.start_time >= self.captured_touch_time
-            and touch.speed >= Layout.flick_speed_threshold
-            and (
-                self.hitbox.bounds.contains_point(touch.position)
-                or self.hitbox.bounds.contains_point(touch.prev_position)
-            )
-        )
 
     def check_touch_is_eligible_for_trace(self, touch: Touch) -> bool:
         # Note that this does not check the time, since time may not be updated if the touch is stationary.
@@ -818,54 +671,19 @@ def compute_slide_input_bounds(ease_type: EaseType, head: BaseNote, tail: BaseNo
 @level_memory
 class NoteMemory:
     active_tap_input_notes: VarArray[EntityRef[BaseNote], Dim[256]]
-    active_release_input_notes: VarArray[EntityRef[BaseNote], Dim[256]]
 
 
 NormalTapNote = BaseNote.derive(archetype_names.NORMAL_TAP_NOTE, is_scored=True, key=NoteKind.NORM_TAP)
 CriticalTapNote = BaseNote.derive(archetype_names.CRITICAL_TAP_NOTE, is_scored=True, key=NoteKind.CRIT_TAP)
-NormalFlickNote = BaseNote.derive(archetype_names.NORMAL_FLICK_NOTE, is_scored=True, key=NoteKind.NORM_FLICK)
-CriticalFlickNote = BaseNote.derive(archetype_names.CRITICAL_FLICK_NOTE, is_scored=True, key=NoteKind.CRIT_FLICK)
-NormalTraceNote = BaseNote.derive(archetype_names.NORMAL_TRACE_NOTE, is_scored=True, key=NoteKind.NORM_TRACE)
-CriticalTraceNote = BaseNote.derive(archetype_names.CRITICAL_TRACE_NOTE, is_scored=True, key=NoteKind.CRIT_TRACE)
 NormalTraceFlickNote = BaseNote.derive(
     archetype_names.NORMAL_TRACE_FLICK_NOTE, is_scored=True, key=NoteKind.NORM_TRACE_FLICK
 )
 CriticalTraceFlickNote = BaseNote.derive(
     archetype_names.CRITICAL_TRACE_FLICK_NOTE, is_scored=True, key=NoteKind.CRIT_TRACE_FLICK
 )
-NormalReleaseNote = BaseNote.derive(archetype_names.NORMAL_RELEASE_NOTE, is_scored=True, key=NoteKind.NORM_RELEASE)
-CriticalReleaseNote = BaseNote.derive(archetype_names.CRITICAL_RELEASE_NOTE, is_scored=True, key=NoteKind.CRIT_RELEASE)
 NormalHeadTapNote = BaseNote.derive(archetype_names.NORMAL_HEAD_TAP_NOTE, is_scored=True, key=NoteKind.NORM_HEAD_TAP)
 CriticalHeadTapNote = BaseNote.derive(
     archetype_names.CRITICAL_HEAD_TAP_NOTE, is_scored=True, key=NoteKind.CRIT_HEAD_TAP
-)
-NormalHeadFlickNote = BaseNote.derive(
-    archetype_names.NORMAL_HEAD_FLICK_NOTE, is_scored=True, key=NoteKind.NORM_HEAD_FLICK
-)
-CriticalHeadFlickNote = BaseNote.derive(
-    archetype_names.CRITICAL_HEAD_FLICK_NOTE, is_scored=True, key=NoteKind.CRIT_HEAD_FLICK
-)
-NormalHeadTraceNote = BaseNote.derive(
-    archetype_names.NORMAL_HEAD_TRACE_NOTE, is_scored=True, key=NoteKind.NORM_HEAD_TRACE
-)
-CriticalHeadTraceNote = BaseNote.derive(
-    archetype_names.CRITICAL_HEAD_TRACE_NOTE, is_scored=True, key=NoteKind.CRIT_HEAD_TRACE
-)
-NormalHeadTraceFlickNote = BaseNote.derive(
-    archetype_names.NORMAL_HEAD_TRACE_FLICK_NOTE, is_scored=True, key=NoteKind.NORM_HEAD_TRACE_FLICK
-)
-CriticalHeadTraceFlickNote = BaseNote.derive(
-    archetype_names.CRITICAL_HEAD_TRACE_FLICK_NOTE, is_scored=True, key=NoteKind.CRIT_HEAD_TRACE_FLICK
-)
-NormalHeadReleaseNote = BaseNote.derive(
-    archetype_names.NORMAL_HEAD_RELEASE_NOTE, is_scored=True, key=NoteKind.NORM_HEAD_RELEASE
-)
-CriticalHeadReleaseNote = BaseNote.derive(
-    archetype_names.CRITICAL_HEAD_RELEASE_NOTE, is_scored=True, key=NoteKind.CRIT_HEAD_RELEASE
-)
-NormalTailTapNote = BaseNote.derive(archetype_names.NORMAL_TAIL_TAP_NOTE, is_scored=True, key=NoteKind.NORM_TAIL_TAP)
-CriticalTailTapNote = BaseNote.derive(
-    archetype_names.CRITICAL_TAIL_TAP_NOTE, is_scored=True, key=NoteKind.CRIT_TAIL_TAP
 )
 NormalTailFlickNote = BaseNote.derive(
     archetype_names.NORMAL_TAIL_FLICK_NOTE, is_scored=True, key=NoteKind.NORM_TAIL_FLICK
@@ -879,18 +697,6 @@ NormalTailTraceNote = BaseNote.derive(
 CriticalTailTraceNote = BaseNote.derive(
     archetype_names.CRITICAL_TAIL_TRACE_NOTE, is_scored=True, key=NoteKind.CRIT_TAIL_TRACE
 )
-NormalTailTraceFlickNote = BaseNote.derive(
-    archetype_names.NORMAL_TAIL_TRACE_FLICK_NOTE, is_scored=True, key=NoteKind.NORM_TAIL_TRACE_FLICK
-)
-CriticalTailTraceFlickNote = BaseNote.derive(
-    archetype_names.CRITICAL_TAIL_TRACE_FLICK_NOTE, is_scored=True, key=NoteKind.CRIT_TAIL_TRACE_FLICK
-)
-NormalTailReleaseNote = BaseNote.derive(
-    archetype_names.NORMAL_TAIL_RELEASE_NOTE, is_scored=True, key=NoteKind.NORM_TAIL_RELEASE
-)
-CriticalTailReleaseNote = BaseNote.derive(
-    archetype_names.CRITICAL_TAIL_RELEASE_NOTE, is_scored=True, key=NoteKind.CRIT_TAIL_RELEASE
-)
 NormalTickNote = BaseNote.derive(archetype_names.NORMAL_TICK_NOTE, is_scored=True, key=NoteKind.NORM_TICK)
 CriticalTickNote = BaseNote.derive(archetype_names.CRITICAL_TICK_NOTE, is_scored=True, key=NoteKind.CRIT_TICK)
 DamageNote = BaseNote.derive(archetype_names.DAMAGE_NOTE, is_scored=True, key=NoteKind.DAMAGE)
@@ -898,176 +704,24 @@ AnchorNote = BaseNote.derive(archetype_names.ANCHOR_NOTE, is_scored=False, key=N
 TransientHiddenTickNote = BaseNote.derive(
     archetype_names.TRANSIENT_HIDDEN_TICK_NOTE, is_scored=True, key=NoteKind.HIDE_TICK
 )
-TransientHiddenDamageTickNote = BaseNote.derive(
-    archetype_names.TRANSIENT_HIDDEN_DAMAGE_TICK_NOTE, is_scored=True, key=NoteKind.HIDE_DAMAGE_TICK
-)
-FakeNormalTapNote = BaseNote.derive(archetype_names.FAKE_NORMAL_TAP_NOTE, is_scored=False, key=NoteKind.NORM_TAP)
-FakeCriticalTapNote = BaseNote.derive(archetype_names.FAKE_CRITICAL_TAP_NOTE, is_scored=False, key=NoteKind.CRIT_TAP)
-FakeNormalFlickNote = BaseNote.derive(archetype_names.FAKE_NORMAL_FLICK_NOTE, is_scored=False, key=NoteKind.NORM_FLICK)
-FakeCriticalFlickNote = BaseNote.derive(
-    archetype_names.FAKE_CRITICAL_FLICK_NOTE, is_scored=False, key=NoteKind.CRIT_FLICK
-)
-FakeNormalTraceNote = BaseNote.derive(archetype_names.FAKE_NORMAL_TRACE_NOTE, is_scored=False, key=NoteKind.NORM_TRACE)
-FakeCriticalTraceNote = BaseNote.derive(
-    archetype_names.FAKE_CRITICAL_TRACE_NOTE, is_scored=False, key=NoteKind.CRIT_TRACE
-)
-FakeNormalTraceFlickNote = BaseNote.derive(
-    archetype_names.FAKE_NORMAL_TRACE_FLICK_NOTE, is_scored=False, key=NoteKind.NORM_TRACE_FLICK
-)
-FakeCriticalTraceFlickNote = BaseNote.derive(
-    "FakeCriticalTraceFlickNote", is_scored=False, key=NoteKind.CRIT_TRACE_FLICK
-)
-FakeNormalReleaseNote = BaseNote.derive(
-    archetype_names.FAKE_NORMAL_RELEASE_NOTE, is_scored=False, key=NoteKind.NORM_RELEASE
-)
-FakeCriticalReleaseNote = BaseNote.derive(
-    archetype_names.FAKE_CRITICAL_RELEASE_NOTE, is_scored=False, key=NoteKind.CRIT_RELEASE
-)
-FakeNormalHeadTapNote = BaseNote.derive(
-    archetype_names.FAKE_NORMAL_HEAD_TAP_NOTE, is_scored=False, key=NoteKind.NORM_HEAD_TAP
-)
-FakeCriticalHeadTapNote = BaseNote.derive(
-    archetype_names.FAKE_CRITICAL_HEAD_TAP_NOTE, is_scored=False, key=NoteKind.CRIT_HEAD_TAP
-)
-FakeNormalHeadFlickNote = BaseNote.derive(
-    archetype_names.FAKE_NORMAL_HEAD_FLICK_NOTE, is_scored=False, key=NoteKind.NORM_HEAD_FLICK
-)
-FakeCriticalHeadFlickNote = BaseNote.derive(
-    archetype_names.FAKE_CRITICAL_HEAD_FLICK_NOTE, is_scored=False, key=NoteKind.CRIT_HEAD_FLICK
-)
-FakeNormalHeadTraceNote = BaseNote.derive(
-    archetype_names.FAKE_NORMAL_HEAD_TRACE_NOTE, is_scored=False, key=NoteKind.NORM_HEAD_TRACE
-)
-FakeCriticalHeadTraceNote = BaseNote.derive(
-    archetype_names.FAKE_CRITICAL_HEAD_TRACE_NOTE, is_scored=False, key=NoteKind.CRIT_HEAD_TRACE
-)
-FakeNormalHeadTraceFlickNote = BaseNote.derive(
-    archetype_names.FAKE_NORMAL_HEAD_TRACE_FLICK_NOTE, is_scored=False, key=NoteKind.NORM_HEAD_TRACE_FLICK
-)
-FakeCriticalHeadTraceFlickNote = BaseNote.derive(
-    archetype_names.FAKE_CRITICAL_HEAD_TRACE_FLICK_NOTE, is_scored=False, key=NoteKind.CRIT_HEAD_TRACE_FLICK
-)
-FakeNormalHeadReleaseNote = BaseNote.derive(
-    archetype_names.FAKE_NORMAL_HEAD_RELEASE_NOTE, is_scored=False, key=NoteKind.NORM_HEAD_RELEASE
-)
-FakeCriticalHeadReleaseNote = BaseNote.derive(
-    archetype_names.FAKE_CRITICAL_HEAD_RELEASE_NOTE, is_scored=False, key=NoteKind.CRIT_HEAD_RELEASE
-)
-FakeNormalTailTapNote = BaseNote.derive(
-    archetype_names.FAKE_NORMAL_TAIL_TAP_NOTE, is_scored=False, key=NoteKind.NORM_TAIL_TAP
-)
-FakeCriticalTailTapNote = BaseNote.derive(
-    archetype_names.FAKE_CRITICAL_TAIL_TAP_NOTE, is_scored=False, key=NoteKind.CRIT_TAIL_TAP
-)
-FakeNormalTailFlickNote = BaseNote.derive(
-    archetype_names.FAKE_NORMAL_TAIL_FLICK_NOTE, is_scored=False, key=NoteKind.NORM_TAIL_FLICK
-)
-FakeCriticalTailFlickNote = BaseNote.derive(
-    archetype_names.FAKE_CRITICAL_TAIL_FLICK_NOTE, is_scored=False, key=NoteKind.CRIT_TAIL_FLICK
-)
-FakeNormalTailTraceNote = BaseNote.derive(
-    archetype_names.FAKE_NORMAL_TAIL_TRACE_NOTE, is_scored=False, key=NoteKind.NORM_TAIL_TRACE
-)
-FakeCriticalTailTraceNote = BaseNote.derive(
-    archetype_names.FAKE_CRITICAL_TAIL_TRACE_NOTE, is_scored=False, key=NoteKind.CRIT_TAIL_TRACE
-)
-FakeNormalTailTraceFlickNote = BaseNote.derive(
-    archetype_names.FAKE_NORMAL_TAIL_TRACE_FLICK_NOTE, is_scored=False, key=NoteKind.NORM_TAIL_TRACE_FLICK
-)
-FakeCriticalTailTraceFlickNote = BaseNote.derive(
-    archetype_names.FAKE_CRITICAL_TAIL_TRACE_FLICK_NOTE, is_scored=False, key=NoteKind.CRIT_TAIL_TRACE_FLICK
-)
-FakeNormalTailReleaseNote = BaseNote.derive(
-    archetype_names.FAKE_NORMAL_TAIL_RELEASE_NOTE, is_scored=False, key=NoteKind.NORM_TAIL_RELEASE
-)
-FakeCriticalTailReleaseNote = BaseNote.derive(
-    archetype_names.FAKE_CRITICAL_TAIL_RELEASE_NOTE, is_scored=False, key=NoteKind.CRIT_TAIL_RELEASE
-)
-FakeNormalTickNote = BaseNote.derive(archetype_names.FAKE_NORMAL_TICK_NOTE, is_scored=False, key=NoteKind.NORM_TICK)
-FakeCriticalTickNote = BaseNote.derive(archetype_names.FAKE_CRITICAL_TICK_NOTE, is_scored=False, key=NoteKind.CRIT_TICK)
-FakeDamageNote = BaseNote.derive(archetype_names.FAKE_DAMAGE_NOTE, is_scored=False, key=NoteKind.DAMAGE)
-FakeAnchorNote = BaseNote.derive(archetype_names.FAKE_ANCHOR_NOTE, is_scored=False, key=NoteKind.ANCHOR)
-FakeTransientHiddenTickNote = BaseNote.derive(
-    archetype_names.FAKE_TRANSIENT_HIDDEN_TICK_NOTE, is_scored=False, key=NoteKind.HIDE_TICK
-)
-FakeTransientHiddenDamageTickNote = BaseNote.derive(
-    archetype_names.FAKE_TRANSIENT_HIDDEN_DAMAGE_TICK_NOTE, is_scored=False, key=NoteKind.HIDE_DAMAGE_TICK
-)
 
 
 NOTE_ARCHETYPES = (
     NormalTapNote,
     CriticalTapNote,
-    NormalFlickNote,
-    CriticalFlickNote,
-    NormalTraceNote,
-    CriticalTraceNote,
     NormalTraceFlickNote,
     CriticalTraceFlickNote,
-    NormalReleaseNote,
-    CriticalReleaseNote,
     NormalHeadTapNote,
     CriticalHeadTapNote,
-    NormalHeadFlickNote,
-    CriticalHeadFlickNote,
-    NormalHeadTraceNote,
-    CriticalHeadTraceNote,
-    NormalHeadTraceFlickNote,
-    CriticalHeadTraceFlickNote,
-    NormalHeadReleaseNote,
-    CriticalHeadReleaseNote,
-    NormalTailTapNote,
-    CriticalTailTapNote,
     NormalTailFlickNote,
     CriticalTailFlickNote,
     NormalTailTraceNote,
     CriticalTailTraceNote,
-    NormalTailTraceFlickNote,
-    CriticalTailTraceFlickNote,
-    NormalTailReleaseNote,
-    CriticalTailReleaseNote,
     NormalTickNote,
     CriticalTickNote,
     DamageNote,
     AnchorNote,
     TransientHiddenTickNote,
-    TransientHiddenDamageTickNote,
-    FakeNormalTapNote,
-    FakeCriticalTapNote,
-    FakeNormalFlickNote,
-    FakeCriticalFlickNote,
-    FakeNormalTraceNote,
-    FakeCriticalTraceNote,
-    FakeNormalTraceFlickNote,
-    FakeCriticalTraceFlickNote,
-    FakeNormalReleaseNote,
-    FakeCriticalReleaseNote,
-    FakeNormalHeadTapNote,
-    FakeCriticalHeadTapNote,
-    FakeNormalHeadFlickNote,
-    FakeCriticalHeadFlickNote,
-    FakeNormalHeadTraceNote,
-    FakeCriticalHeadTraceNote,
-    FakeNormalHeadTraceFlickNote,
-    FakeCriticalHeadTraceFlickNote,
-    FakeNormalHeadReleaseNote,
-    FakeCriticalHeadReleaseNote,
-    FakeNormalTailTapNote,
-    FakeCriticalTailTapNote,
-    FakeNormalTailFlickNote,
-    FakeCriticalTailFlickNote,
-    FakeNormalTailTraceNote,
-    FakeCriticalTailTraceNote,
-    FakeNormalTailTraceFlickNote,
-    FakeCriticalTailTraceFlickNote,
-    FakeNormalTailReleaseNote,
-    FakeCriticalTailReleaseNote,
-    FakeNormalTickNote,
-    FakeCriticalTickNote,
-    FakeDamageNote,
-    FakeAnchorNote,
-    FakeTransientHiddenTickNote,
-    FakeTransientHiddenDamageTickNote,
 )
 
 

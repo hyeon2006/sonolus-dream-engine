@@ -52,24 +52,6 @@ def paint_tap_motion(pos: Vec2, progress: float, fade_out: bool = True):
     _paint_tap(pos, tap_progress, a)
 
 
-def paint_release_motion(pos: Vec2, progress: float):
-    a = interp_clamped(
-        (0.25, 0.75),
-        (1, 0),
-        progress,
-    )
-    tap_progress = interp_clamped(
-        (0.25, 0.75),
-        (1, 0),  # Reversed for release motion
-        progress,
-    )
-    _paint_tap(
-        pos,
-        tap_progress,
-        a,
-    )
-
-
 def paint_hold_motion(
     pos: Vec2,
     a: float = 1,

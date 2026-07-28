@@ -23,7 +23,7 @@ slide = LevelSlide(
             beat=6.0,
             lane=2.0,
             size=1.0,
-            kind=NoteKind.NORM_TAIL_RELEASE,
+            kind=NoteKind.NORM_TAIL_TRACE,
         ),
     ]
 )
@@ -183,7 +183,7 @@ level = build_level(
         LevelBpmChange(beat=0.0, bpm=120.0),
         LevelNote(beat=1.0, lane=-2.0, size=1.0, kind=NoteKind.NORM_TAP),
         slide,
-        LevelNote(beat=7.0, lane=2.0, size=1.0, kind=NoteKind.CRIT_FLICK),
+        LevelNote(beat=7.0, lane=2.0, size=1.0, kind=NoteKind.CRIT_TAIL_FLICK),
         guide,
         short_red_to_cyan_guide,
         short_magenta_to_green_fade_guide,

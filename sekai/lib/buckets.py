@@ -101,42 +101,6 @@ class Buckets:
         unit=StandardText.MILLISECOND_UNIT,
     )
 
-    normal_flick: Bucket = bucket(
-        sprites=create_bucket_sprites(
-            body=BaseSkin.flick_note_basic,
-            body_fallback=BaseSkin.note_red_fallback,
-            arrow=BaseSkin.flick_arrow_red_fallback,
-        ),
-        unit=StandardText.MILLISECOND_UNIT,
-    )
-    critical_flick: Bucket = bucket(
-        sprites=create_bucket_sprites(
-            body=BaseSkin.critical_flick_note_basic,
-            body_fallback=BaseSkin.note_yellow_fallback,
-            arrow=BaseSkin.flick_arrow_yellow_fallback,
-        ),
-        unit=StandardText.MILLISECOND_UNIT,
-    )
-
-    normal_trace: Bucket = bucket(
-        sprites=create_bucket_sprites(
-            body=BaseSkin.normal_trace_note_basic,
-            body_fallback=BaseSkin.note_green_fallback,
-            tick=BaseSkin.normal_trace_note_tick,
-            tick_fallback=BaseSkin.trace_note_green_tick,
-        ),
-        unit=StandardText.MILLISECOND_UNIT,
-    )
-    critical_trace: Bucket = bucket(
-        sprites=create_bucket_sprites(
-            body=BaseSkin.critical_trace_note_basic,
-            body_fallback=BaseSkin.note_yellow_fallback,
-            tick=BaseSkin.critical_trace_note_tick,
-            tick_fallback=BaseSkin.trace_note_yellow_tick,
-        ),
-        unit=StandardText.MILLISECOND_UNIT,
-    )
-
     normal_trace_flick: Bucket = bucket(
         sprites=create_bucket_sprites(
             body=BaseSkin.trace_flick_note_basic,
@@ -179,103 +143,8 @@ class Buckets:
         ),
         unit=StandardText.MILLISECOND_UNIT,
     )
-    normal_head_flick: Bucket = bucket(
-        sprites=create_bucket_sprites(
-            connector=BaseSkin.normal_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_green_fallback,
-            body=BaseSkin.flick_note_basic,
-            body_fallback=BaseSkin.note_red_fallback,
-            body_pos="left",
-            arrow=BaseSkin.flick_arrow_red_fallback,
-        ),
-        unit=StandardText.MILLISECOND_UNIT,
-    )
-    critical_head_flick: Bucket = bucket(
-        sprites=create_bucket_sprites(
-            connector=BaseSkin.critical_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_yellow_fallback,
-            body=BaseSkin.critical_flick_note_basic,
-            body_fallback=BaseSkin.note_yellow_fallback,
-            body_pos="left",
-            arrow=BaseSkin.flick_arrow_yellow_fallback,
-        ),
-        unit=StandardText.MILLISECOND_UNIT,
-    )
-
-    normal_head_trace: Bucket = bucket(
-        sprites=create_bucket_sprites(
-            connector=BaseSkin.normal_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_green_fallback,
-            body=BaseSkin.normal_trace_note_basic,
-            body_fallback=BaseSkin.note_green_fallback,
-            body_pos="left",
-            tick=BaseSkin.normal_trace_note_tick,
-            tick_fallback=BaseSkin.trace_note_green_tick,
-        ),
-        unit=StandardText.MILLISECOND_UNIT,
-    )
-    critical_head_trace: Bucket = bucket(
-        sprites=create_bucket_sprites(
-            connector=BaseSkin.critical_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_yellow_fallback,
-            body=BaseSkin.critical_trace_note_basic,
-            body_fallback=BaseSkin.note_yellow_fallback,
-            body_pos="left",
-            tick=BaseSkin.critical_trace_note_tick,
-            tick_fallback=BaseSkin.trace_note_yellow_tick,
-        ),
-        unit=StandardText.MILLISECOND_UNIT,
-    )
-
-    normal_head_trace_flick: Bucket = bucket(
-        sprites=create_bucket_sprites(
-            connector=BaseSkin.normal_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_green_fallback,
-            body=BaseSkin.trace_flick_note_basic,
-            body_fallback=BaseSkin.note_red_fallback,
-            body_pos="left",
-            tick=BaseSkin.trace_flick_note_tick,
-            tick_fallback=BaseSkin.trace_note_red_tick,
-            arrow=BaseSkin.flick_arrow_red_fallback,
-        ),
-        unit=StandardText.MILLISECOND_UNIT,
-    )
-    critical_head_trace_flick: Bucket = bucket(
-        sprites=create_bucket_sprites(
-            connector=BaseSkin.critical_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_yellow_fallback,
-            body=BaseSkin.critical_trace_flick_note_basic,
-            body_fallback=BaseSkin.note_yellow_fallback,
-            body_pos="left",
-            tick=BaseSkin.critical_trace_flick_note_tick,
-            tick_fallback=BaseSkin.trace_note_yellow_tick,
-            arrow=BaseSkin.flick_arrow_yellow_fallback,
-        ),
-        unit=StandardText.MILLISECOND_UNIT,
-    )
 
     # Tail buckets
-    normal_tail_release: Bucket = bucket(
-        sprites=create_bucket_sprites(
-            connector=BaseSkin.normal_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_green_fallback,
-            body=BaseSkin.slide_note_basic,
-            body_fallback=BaseSkin.note_green_fallback,
-            body_pos="right",
-        ),
-        unit=StandardText.MILLISECOND_UNIT,
-    )
-    critical_tail_release: Bucket = bucket(
-        sprites=create_bucket_sprites(
-            connector=BaseSkin.critical_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_yellow_fallback,
-            body=BaseSkin.critical_note_basic,
-            body_fallback=BaseSkin.note_yellow_fallback,
-            body_pos="right",
-        ),
-        unit=StandardText.MILLISECOND_UNIT,
-    )
-
     normal_tail_flick: Bucket = bucket(
         sprites=create_bucket_sprites(
             connector=BaseSkin.normal_active_slide_connection_normal,
@@ -298,7 +167,6 @@ class Buckets:
         ),
         unit=StandardText.MILLISECOND_UNIT,
     )
-
     normal_tail_trace: Bucket = bucket(
         sprites=create_bucket_sprites(
             connector=BaseSkin.normal_active_slide_connection_normal,
@@ -324,59 +192,18 @@ class Buckets:
         unit=StandardText.MILLISECOND_UNIT,
     )
 
-    normal_tail_trace_flick: Bucket = bucket(
-        sprites=create_bucket_sprites(
-            connector=BaseSkin.normal_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_green_fallback,
-            body=BaseSkin.trace_flick_note_basic,
-            body_fallback=BaseSkin.note_red_fallback,
-            body_pos="right",
-            tick=BaseSkin.trace_flick_note_tick,
-            tick_fallback=BaseSkin.trace_note_red_tick,
-            arrow=BaseSkin.flick_arrow_red_fallback,
-        ),
-        unit=StandardText.MILLISECOND_UNIT,
-    )
-    critical_tail_trace_flick: Bucket = bucket(
-        sprites=create_bucket_sprites(
-            connector=BaseSkin.critical_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_yellow_fallback,
-            body=BaseSkin.critical_trace_flick_note_basic,
-            body_fallback=BaseSkin.note_yellow_fallback,
-            body_pos="right",
-            tick=BaseSkin.critical_trace_flick_note_tick,
-            tick_fallback=BaseSkin.trace_note_yellow_tick,
-            arrow=BaseSkin.flick_arrow_yellow_fallback,
-        ),
-        unit=StandardText.MILLISECOND_UNIT,
-    )
-
 
 def init_buckets():
-    Buckets.normal_tap.window @= TAP_NORMAL_WINDOW.bucket_window
-    Buckets.critical_tap.window @= TAP_CRITICAL_WINDOW.bucket_window
-    Buckets.normal_flick.window @= FLICK_NORMAL_WINDOW.bucket_window
-    Buckets.critical_flick.window @= FLICK_CRITICAL_WINDOW.bucket_window
-    Buckets.normal_trace.window @= TRACE_NORMAL_WINDOW.bucket_window
-    Buckets.critical_trace.window @= TRACE_CRITICAL_WINDOW.bucket_window
-    Buckets.normal_trace_flick.window @= TRACE_FLICK_NORMAL_WINDOW.bucket_window
-    Buckets.critical_trace_flick.window @= TRACE_FLICK_CRITICAL_WINDOW.bucket_window
-    Buckets.normal_head_tap.window @= TAP_NORMAL_WINDOW.bucket_window
-    Buckets.critical_head_tap.window @= TAP_CRITICAL_WINDOW.bucket_window
-    Buckets.normal_head_flick.window @= FLICK_NORMAL_WINDOW.bucket_window
-    Buckets.critical_head_flick.window @= FLICK_CRITICAL_WINDOW.bucket_window
-    Buckets.normal_head_trace.window @= TRACE_NORMAL_WINDOW.bucket_window
-    Buckets.critical_head_trace.window @= TRACE_CRITICAL_WINDOW.bucket_window
-    Buckets.normal_head_trace_flick.window @= TRACE_FLICK_NORMAL_WINDOW.bucket_window
-    Buckets.critical_head_trace_flick.window @= TRACE_FLICK_CRITICAL_WINDOW.bucket_window
-    Buckets.normal_tail_flick.window @= SLIDE_END_FLICK_NORMAL_WINDOW.bucket_window
-    Buckets.critical_tail_flick.window @= SLIDE_END_FLICK_CRITICAL_WINDOW.bucket_window
-    Buckets.normal_tail_trace.window @= SLIDE_END_TRACE_NORMAL_WINDOW.bucket_window
-    Buckets.critical_tail_trace.window @= SLIDE_END_TRACE_CRITICAL_WINDOW.bucket_window
-    Buckets.normal_tail_trace_flick.window @= TRACE_FLICK_NORMAL_WINDOW.bucket_window
-    Buckets.critical_tail_trace_flick.window @= TRACE_FLICK_CRITICAL_WINDOW.bucket_window
-    Buckets.normal_tail_release.window @= SLIDE_END_NORMAL_WINDOW.bucket_window
-    Buckets.critical_tail_release.window @= SLIDE_END_CRITICAL_WINDOW.bucket_window
+    Buckets.normal_tap.window @= TAP_WINDOW.bucket_window
+    Buckets.critical_tap.window @= TAP_WINDOW.bucket_window
+    Buckets.normal_trace_flick.window @= TRACE_FLICK_WINDOW.bucket_window
+    Buckets.critical_trace_flick.window @= TRACE_FLICK_WINDOW.bucket_window
+    Buckets.normal_head_tap.window @= TAP_WINDOW.bucket_window
+    Buckets.critical_head_tap.window @= TAP_WINDOW.bucket_window
+    Buckets.normal_tail_trace.window @= SLIDE_END_TRACE_WINDOW.bucket_window
+    Buckets.critical_tail_trace.window @= SLIDE_END_TRACE_WINDOW.bucket_window
+    Buckets.normal_tail_flick.window @= SLIDE_END_FLICK_WINDOW.bucket_window
+    Buckets.critical_tail_flick.window @= SLIDE_END_FLICK_WINDOW.bucket_window
 
 
 def round_interval(interval: Interval) -> Interval:
@@ -436,29 +263,13 @@ def frames_to_window(
     )
 
 
-TAP_NORMAL_WINDOW = frames_to_window(2.5, 5, 6.5, 7.5)
-TAP_CRITICAL_WINDOW = frames_to_window(3.3, 4.5, 6.5, 7.5)
+TAP_WINDOW = frames_to_window((4, 3), (6, 5), (8, 7), (9, 8))
 
-FLICK_NORMAL_WINDOW = frames_to_window(2.5, (6.5, 7.5), (7, 8), (7.5, 8.5))
-FLICK_CRITICAL_WINDOW = frames_to_window(3.5, (6.5, 7.5), (7, 8), (7.5, 8.5))
+TRACE_FLICK_WINDOW = frames_to_window((6, 5), None, None, (9, 8))
 
-TRACE_NORMAL_WINDOW = frames_to_window(5, None, None, None)
-TRACE_CRITICAL_WINDOW = frames_to_window(5, None, None, None)
+SLIDE_END_TRACE_WINDOW = frames_to_window(1.5, None, None, None)
+SLIDE_END_FLICK_WINDOW = frames_to_window((6, 5), None, None, (9, 8))
 
-TRACE_FLICK_NORMAL_WINDOW = frames_to_window((6.5, 7.5), None, None, None)
-TRACE_FLICK_CRITICAL_WINDOW = frames_to_window((6.5, 7.5), None, None, None)
-
-SLIDE_END_NORMAL_WINDOW = frames_to_window((3.5, 4), (6.5, 8), (7.5, 8.5), None)
-SLIDE_END_CRITICAL_WINDOW = frames_to_window((3.5, 4), (6.5, 8), (7.5, 8.5), None)
-
-SLIDE_END_TRACE_NORMAL_WINDOW = frames_to_window((6.5, 8), None, None, None)
-SLIDE_END_TRACE_CRITICAL_WINDOW = frames_to_window((6.5, 8), None, None, None)
-
-SLIDE_END_FLICK_NORMAL_WINDOW = frames_to_window((3.5, 4), (6.5, 8), (7.5, 8.5), None)
-SLIDE_END_FLICK_CRITICAL_WINDOW = frames_to_window((3.5, 4), (6.5, 8), (7.5, 8.5), None)
-
-SLIDE_TICK_JUDGMENT_WINDOW = frames_to_window(5, None, None, None)
+SLIDE_TICK_JUDGMENT_WINDOW = frames_to_window(1.5, None, None, None)
 
 EMPTY_JUDGMENT_WINDOW = frames_to_window(0, None, None, None)
-
-SLIDE_END_LOCKOUT_DURATION = 0.25

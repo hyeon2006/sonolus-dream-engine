@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import itertools
-import math
 import struct
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import cast
 
@@ -25,19 +23,16 @@ from sekai.play.sim_line import SimLine
 from sekai.play.timescale import TimescaleChange, TimescaleGroup
 
 
-def _build_note_archetype_lookup() -> dict[tuple[NoteKind, bool], type[PlayArchetype]]:
-    lookup: dict[tuple[NoteKind, bool], type[PlayArchetype]] = {}
+def _build_note_archetype_lookup() -> dict[NoteKind, type[PlayArchetype]]:
+    lookup: dict[NoteKind, type[PlayArchetype]] = {}
     for archetype in NOTE_ARCHETYPES:
-        is_fake = str(archetype.name).startswith("Fake")
-        lookup[(cast(NoteKind, archetype.key), is_fake)] = archetype
+        lookup[cast(NoteKind, archetype.key)] = archetype
     return lookup
 
 
 _NOTE_ARCHETYPE_BY_KIND = _build_note_archetype_lookup()
 
-_SIM_LINE_EXCLUDED_KINDS = frozenset(
-    {NoteKind.ANCHOR, NoteKind.NORM_TICK, NoteKind.CRIT_TICK, NoteKind.HIDE_TICK, NoteKind.HIDE_DAMAGE_TICK}
-)
+_SIM_LINE_EXCLUDED_KINDS = frozenset({NoteKind.ANCHOR, NoteKind.NORM_TICK, NoteKind.CRIT_TICK, NoteKind.HIDE_TICK})
 
 _ACTIVE_HOLD_SEGMENT_KINDS = frozenset(
     {
@@ -50,9 +45,6 @@ _ACTIVE_HOLD_SEGMENT_KINDS = frozenset(
 
 # Segment kinds whose connectors track touches through their section's active head/tail refs.
 _INPUT_TRACKED_SEGMENT_KINDS = _ACTIVE_HOLD_SEGMENT_KINDS | {ConnectorKind.DAMAGE}
-
-_DAMAGE_TICK_STEP = 0.5
-_BEAT_EPSILON = 1e-6
 
 
 def _build_silent_wav(duration_seconds: float = 60.0, sample_rate: int = 8000) -> bytes:
@@ -106,7 +98,6 @@ class LevelNote:
     kind: NoteKind
     timescale_group: LevelTimescaleGroup | None = None
     direction: FlickDirection = FlickDirection.UP_OMNI
-    is_fake: bool = False
     segment_kind: ConnectorKind = ConnectorKind.NONE
     segment_red: float = -1.0
     segment_green: float = -1.0
@@ -124,11 +115,8 @@ class LevelSlide:
 type LevelEntities = LevelBpmChange | LevelTimescaleGroup | LevelNote | LevelSlide
 
 
-def _note_archetype_for(kind: NoteKind, is_fake: bool) -> type[PlayArchetype]:
-    key = (kind, is_fake)
-    if key not in _NOTE_ARCHETYPE_BY_KIND and is_fake:
-        key = (kind, False)
-    return _NOTE_ARCHETYPE_BY_KIND[key]
+def _note_archetype_for(kind: NoteKind) -> type[PlayArchetype]:
+    return _NOTE_ARCHETYPE_BY_KIND[kind]
 
 
 def build_level(
@@ -178,7 +166,7 @@ def build_level(
 
     def emit_note(level_note: LevelNote) -> BaseNote:
         ts_group = resolve_ts_group(level_note.timescale_group)
-        archetype_cls = _note_archetype_for(level_note.kind, level_note.is_fake)
+        archetype_cls = _note_archetype_for(level_note.kind)
         kwargs: dict[str, object] = {
             "beat": level_note.beat,
             "lane": level_note.lane,
@@ -248,8 +236,6 @@ def build_level(
                 connector.active_tail_ref = built[last_index].ref()
             out_entities.append(connector)
 
-        _emit_damage_ticks(slide, built, non_attached, slide_kind, emit_note)
-
     for note, slide in pending_attachments:
         candidates = slide_non_attached[id(slide)]
         attach_head: BaseNote | None = None
@@ -289,66 +275,6 @@ def build_level(
             entities=list(sorted_entities),
         ),
     )
-
-
-def _emit_damage_ticks(
-    slide: LevelSlide,
-    built: list[BaseNote],
-    non_attached: list[BaseNote],
-    slide_kind: ConnectorKind,
-    emit_note: Callable[..., BaseNote],
-) -> None:
-    """Emit a TransientHiddenDamageTickNote every half beat over a DAMAGE slide."""
-    if slide_kind != ConnectorKind.DAMAGE:
-        return
-    head_ln = slide.notes[0]
-    head_beat = head_ln.beat
-    tail_beat = slide.notes[-1].beat
-
-    def emit_tick(beat: float) -> None:
-        tick = emit_note(
-            LevelNote(
-                beat=beat,
-                lane=0.0,
-                size=0.0,
-                kind=NoteKind.HIDE_DAMAGE_TICK,
-                timescale_group=head_ln.timescale_group,
-                is_fake=head_ln.is_fake,
-            )
-        )
-        attach_head, attach_tail = _bracketing_non_attached(non_attached, beat)
-        tick.attach_head_ref = attach_head.ref()
-        tick.attach_tail_ref = attach_tail.ref()
-        tick.is_attached = True
-        tick.active_head_ref = built[0].ref()
-
-    first_step = math.ceil(head_beat / _DAMAGE_TICK_STEP - _BEAT_EPSILON)
-    last_step = math.floor(tail_beat / _DAMAGE_TICK_STEP + _BEAT_EPSILON)
-    for step in range(first_step, last_step + 1):
-        beat = step * _DAMAGE_TICK_STEP
-        if abs(beat - head_beat) < _BEAT_EPSILON:
-            continue
-        emit_tick(beat)
-    if tail_beat > last_step * _DAMAGE_TICK_STEP + _BEAT_EPSILON:
-        emit_tick(tail_beat)
-
-
-def _bracketing_non_attached(non_attached: list[BaseNote], beat: float) -> tuple[BaseNote, BaseNote]:
-    """Find the consecutive non-attached joints enclosing the beat, attaching backward only at the slide's end."""
-    attach_tail: BaseNote | None = None
-    for cand in non_attached:
-        if cand.beat > beat + _BEAT_EPSILON:
-            attach_tail = cand
-            break
-    if attach_tail is None:
-        attach_tail = non_attached[-1]
-    attach_head = non_attached[0]
-    for cand in non_attached:
-        if cand is attach_tail:
-            break
-        if cand.beat <= beat + _BEAT_EPSILON:
-            attach_head = cand
-    return attach_head, attach_tail
 
 
 def _build_timescale_group(

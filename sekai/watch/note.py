@@ -29,7 +29,6 @@ from sekai.lib.layout import (
 )
 from sekai.lib.note import (
     NoteKind,
-    damage_tick_input_start_beat,
     draw_hitbox_overlay,
     draw_note,
     get_attach_params,
@@ -227,9 +226,6 @@ class WatchBaseNote(WatchArchetype):
     def draw_hitbox(self):
         if not Options.show_hitboxes or not self.is_scored:
             return
-        if self.kind == NoteKind.HIDE_DAMAGE_TICK:
-            self.draw_damage_tick_hitbox()
-            return
         input_interval = get_note_window(self.kind).bad + self.target_time
         draw_start = hitbox_draw_start(self.kind, input_interval.start, self.target_time)
         if draw_start <= time() <= input_interval.end:
@@ -239,47 +235,6 @@ class WatchBaseNote(WatchArchetype):
                 hitbox_draw_alpha(self.kind, draw_start, self.target_time, time()),
                 time_to_target=self.target_time - time(),
             )
-
-    def draw_damage_tick_hitbox(self):
-        # Damage segments have no connector-level hold hitbox, so this is the only hitbox drawn for them.
-        if self.active_head_ref.index <= 0:
-            return
-        window_start_beat = max(damage_tick_input_start_beat(self.beat), self.active_head_ref.get().beat)
-        window_start_time = beat_to_time(window_start_beat)
-        draw_start = hitbox_draw_start(self.kind, window_start_time, self.target_time)
-        if draw_start <= time() <= self.target_time:
-            hitbox = +Hitbox
-            hitbox.bounds @= self.damage_tick_input_bounds(time())
-            draw_hitbox_overlay(
-                hitbox,
-                self.kind,
-                hitbox_draw_alpha(self.kind, draw_start, self.target_time, time()),
-                time_to_target=self.target_time - time(),
-            )
-
-    def damage_tick_input_bounds(self, t: float) -> Quad:
-        connection_head_ref = +EntityRef[WatchBaseNote]
-        if self.is_attached:
-            connection_head_ref @= self.attach_head_ref
-        else:
-            connection_head_ref @= self.ref()
-        while connection_head_ref.get().prev_ref.index > 0 and connection_head_ref.get().target_time > t:
-            connection_head_ref.index = connection_head_ref.get().prev_ref.index
-        if connection_head_ref.get().next_ref.index <= 0 and connection_head_ref.get().prev_ref.index > 0:
-            connection_head_ref.index = connection_head_ref.get().prev_ref.index
-        connection_head = connection_head_ref.get()
-        result = +Quad
-        if connection_head.next_ref.index > 0:
-            result @= compute_slide_input_bounds(
-                connection_head.connector_ease,
-                connection_head,
-                connection_head.next_ref.get(),
-                t,
-                get_leniency(self.kind),
-            )
-        else:
-            result @= self.hitbox.bounds
-        return result
 
     def terminate(self):
         if is_skip():

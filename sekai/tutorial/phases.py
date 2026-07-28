@@ -11,7 +11,6 @@ from sekai.tutorial.instructions import Instructions
 from sekai.tutorial.painting import (
     paint_hold_flick_motion,
     paint_hold_motion,
-    paint_release_motion,
     paint_tap_flick_motion,
     paint_tap_motion,
 )
@@ -30,7 +29,6 @@ FROZEN_REPEATS = 4
 FROZEN_TAP_DURATION = 1
 FROZEN_HOLD_DURATION = 1
 FROZEN_FLICK_DURATION = 0.5
-FROZEN_RELEASE_DURATION = 1
 AVOID_DURATION = 2
 END_DURATION = 1.5
 
@@ -92,13 +90,13 @@ def omni_flick_phase(t: PhaseTime):
     post_hit = t.range(hit.timing, end.end)
 
     norm_note = TutorialNoteInfo.of(
-        kind=NoteKind.NORM_FLICK,
+        kind=NoteKind.NORM_TAIL_FLICK,
         lane=-LANE,
         size=SIZE,
         direction=FlickDirection.UP_OMNI,
     )
     crit_note = TutorialNoteInfo.of(
-        kind=NoteKind.CRIT_FLICK,
+        kind=NoteKind.CRIT_TAIL_FLICK,
         lane=LANE,
         size=SIZE,
         direction=FlickDirection.DOWN_OMNI,
@@ -142,13 +140,13 @@ def up_flick_phase(t: PhaseTime):
     post_hit = t.range(hit.timing, end.end)
 
     norm_note = TutorialNoteInfo.of(
-        kind=NoteKind.NORM_FLICK,
+        kind=NoteKind.NORM_TAIL_FLICK,
         lane=-LANE,
         size=SIZE,
         direction=FlickDirection.UP_LEFT,
     )
     crit_note = TutorialNoteInfo.of(
-        kind=NoteKind.CRIT_FLICK,
+        kind=NoteKind.CRIT_TAIL_FLICK,
         lane=LANE,
         size=SIZE,
         direction=FlickDirection.UP_RIGHT,
@@ -199,13 +197,13 @@ def down_flick_phase(t: PhaseTime):
     post_hit = t.range(hit.timing, end.end)
 
     norm_note = TutorialNoteInfo.of(
-        kind=NoteKind.NORM_FLICK,
+        kind=NoteKind.NORM_TAIL_FLICK,
         lane=-LANE,
         size=SIZE,
         direction=FlickDirection.DOWN_RIGHT,
     )
     crit_note = TutorialNoteInfo.of(
-        kind=NoteKind.CRIT_FLICK,
+        kind=NoteKind.CRIT_TAIL_FLICK,
         lane=LANE,
         size=SIZE,
         direction=FlickDirection.DOWN_LEFT,
@@ -258,12 +256,12 @@ def trace_phase(t: PhaseTime):
     post_hit = t.range(hit.timing, end.end)
 
     norm_note = TutorialNoteInfo.of(
-        kind=NoteKind.NORM_TRACE,
+        kind=NoteKind.NORM_TAIL_TRACE,
         lane=-LANE,
         size=SIZE,
     )
     crit_note = TutorialNoteInfo.of(
-        kind=NoteKind.CRIT_TRACE,
+        kind=NoteKind.CRIT_TAIL_TRACE,
         lane=LANE,
         size=SIZE,
     )
@@ -475,8 +473,8 @@ def slide_head_phase(t: PhaseTime):
 def slide_tail_phase(t: PhaseTime):
     intro = t.first(INTRO_DURATION)
     fall = intro.next(FALL_DURATION)
-    frozen = fall.next(FROZEN_RELEASE_DURATION, repeats=FROZEN_REPEATS)
-    hit = t.instant(frozen.end - FROZEN_RELEASE_DURATION / 2)
+    frozen = fall.next(FROZEN_HOLD_DURATION, repeats=FROZEN_REPEATS)
+    hit = frozen.end_instant()
     end = frozen.next(END_DURATION)
 
     norm_anchor = TutorialNoteInfo.of(
@@ -492,13 +490,13 @@ def slide_tail_phase(t: PhaseTime):
         offset=1,
     )
     norm_tail = TutorialNoteInfo.of(
-        kind=NoteKind.NORM_TAIL_RELEASE,
+        kind=NoteKind.NORM_TAIL_TRACE,
         lane=-LANE,
         size=SIZE,
         offset=0,
     )
     crit_tail = TutorialNoteInfo.of(
-        kind=NoteKind.CRIT_TAIL_RELEASE,
+        kind=NoteKind.CRIT_TAIL_TRACE,
         lane=LANE,
         size=SIZE,
         offset=0,
@@ -524,11 +522,11 @@ def slide_tail_phase(t: PhaseTime):
         if hit.is_upcoming:
             norm_tail.draw()
             crit_tail.draw()
-            norm_anchor.draw_connector_to(norm_tail, critical=False, active=False)
-            crit_anchor.draw_connector_to(crit_tail, critical=True, active=False)
-        paint_release_motion(transformed_vec_at(norm_tail.lane), frozen.progress)
-        paint_release_motion(transformed_vec_at(crit_tail.lane), frozen.progress)
-        Instructions.release.show()
+            norm_anchor.draw_connector_to(norm_tail, critical=False, active=True, show_touch=True, effect_index=0)
+            crit_anchor.draw_connector_to(crit_tail, critical=True, active=True, show_touch=True, effect_index=1)
+        paint_hold_motion(transformed_vec_at(norm_tail.lane))
+        paint_hold_motion(transformed_vec_at(crit_tail.lane))
+        Instructions.hold.show()
     if hit:
         norm_tail.play_hit_effects()
         crit_tail.play_hit_effects()
