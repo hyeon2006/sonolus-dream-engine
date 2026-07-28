@@ -330,8 +330,14 @@ class QueuedTutorialNoteDrawConnectorTo(Record):
             tail_ease_frac=1.0,
             segment_head_target_time=head_target_time,
             segment_head_lane=self.from_note.lane,
+            segment_head_red=1.0,
+            segment_head_green=1.0,
+            segment_head_blue=1.0,
             segment_head_alpha=1,
             segment_tail_target_time=tail_target_time,
+            segment_tail_red=1.0,
+            segment_tail_green=1.0,
+            segment_tail_blue=1.0,
             segment_tail_alpha=1,
         )
         if self.effect_index >= 0 and tail_progress < 1 < head_progress and self.active:

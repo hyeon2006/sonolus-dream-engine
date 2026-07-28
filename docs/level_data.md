@@ -71,8 +71,7 @@ Comprised of many archetypes according to the following naming scheme:
   * OUT_QUAD = 3
   * IN_OUT_QUAD = 4
   * OUT_IN_QUAD = 5
-* **isSeparator**: [Editor] Whether this note is a connector segment separator. Head notes, tail notes, the first note of a slide, and the last note of a slide are always implicitly separators regardless of the value of this field.
-* **segmentKind (ConnectorKind)**: What kind of connector comes in the connector segment after this note, if any. Takes on one of the following values:
+* **segmentKind (ConnectorKind)**: What kind of connector comes after this note, if any. Every connector in one slide must use the same value. Takes on one of the following values:
   * NONE = 0
   * ACTIVE_NORMAL = 1
   * ACTIVE_CRITICAL = 2
@@ -80,17 +79,23 @@ Comprised of many archetypes according to the following naming scheme:
   * FAKE_ACTIVE_NORMAL = 51
   * FAKE_ACTIVE_CRITICAL = 52
   * FAKE_DAMAGE = 53
+  * GUIDE_GHOST = 100
   * GUIDE_NEUTRAL = 101
   * GUIDE_RED = 102
   * GUIDE_GREEN = 103
   * GUIDE_BLUE = 104
   * GUIDE_YELLOW = 105
-  * GUIDE_PURPLE = 106
+  * GUIDE_PURPLE = 106 (magenta)
   * GUIDE_CYAN = 107
   * GUIDE_BLACK = 108
-* **segmentAlpha**: The alpha this note is at for guide connectors.
+* **segmentRed (float)**: The red component of a guide at this note, in the range `[0, 1]`. Defaults to `-1`, which uses the fallback color of **segmentKind**.
+* **segmentGreen (float)**: The green component of a guide at this note, in the range `[0, 1]`. Defaults to `-1`, which uses the fallback color of **segmentKind**.
+* **segmentBlue (float)**: The blue component of a guide at this note, in the range `[0, 1]`. Defaults to `-1`, which uses the fallback color of **segmentKind**.
+* **segmentAlpha (float)**: The alpha component of a guide at this note, in the range `[0, 1]`.
 * **attachHead (ref?[Note])**: The optional head the note attaches to for its **lane**, **size**, and **effective timescale**.
 * **attachTail (ref?[Note])**: The optional tail the note attaches to for its **lane**, **size**, and **effective timescale**.
+
+For new guide data, use **GUIDE_GHOST = 100** and specify **segmentRed**, **segmentGreen**, **segmentBlue**, and **segmentAlpha**. RGBA values are interpolated between adjacent notes without changing **segmentKind**.
 
 ## Connector
 
@@ -101,10 +106,10 @@ An active slide connector or guide.
 
 * **head (ref[Note])**: A reference to the previous (earlier beat) note this connector connects to. Used to calculate starting **beat**, **lane**, and **size**. Also used to obtain the **ease** type.
 * **tail (ref[Note])**: A reference to the next (later beat) note this connector connects to. Used to calculate ending **beat**, **lane** and **size**
-* **segmentHead (ref[Note])**: A reference to the previous separator note. Used to determine **kind** and **alpha**.
-* **segmentTail (ref[Note])**: A reference to the next separator note. Used to determine **alpha**.
-* **activeHead (ref?[Note])**: If this is part of an active slide or DAMAGE segment, a reference to the starting note of the section. Used to determine when to start accepting input for an active slide.
-* **activeTail (ref?[Note])**: If this is part of an active slide or DAMAGE segment, a reference to the ending note of the section.
+* **segmentHead (ref[Note])**: For a guide, the connector's head note. For other slides, the first note of the slide.
+* **segmentTail (ref[Note])**: For a guide, the connector's tail note. For other slides, the last note of the slide.
+* **activeHead (ref?[Note])**: For an active or DAMAGE slide, a reference to the first note of the slide.
+* **activeTail (ref?[Note])**: For an active or DAMAGE slide, a reference to the last note of the slide.
 
 ## SimLine
 

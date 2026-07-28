@@ -88,10 +88,6 @@ export const uscToLevelData = (usc: USC, offset = 0): LevelData => {
                             value: 0,
                         },
                         {
-                            name: 'isSeparator',
-                            value: 0,
-                        },
-                        {
                             name: 'connectorEase',
                             value: 1,
                         },
@@ -178,10 +174,6 @@ export const uscToLevelData = (usc: USC, offset = 0): LevelData => {
                                 value: +(connection.type === 'attach'),
                             },
                             {
-                                name: 'isSeparator',
-                                value: +!object.active,
-                            },
-                            {
                                 name: 'connectorEase',
                                 value:
                                     connection.type === 'start' ||
@@ -192,13 +184,19 @@ export const uscToLevelData = (usc: USC, offset = 0): LevelData => {
                             },
                             {
                                 name: 'segmentKind',
-                                value: object.active
-                                    ? object.critical
-                                        ? 2
-                                        : 1
-                                    : object.critical
-                                      ? 105
-                                      : 103,
+                                value: object.active ? (object.critical ? 2 : 1) : 100,
+                            },
+                            {
+                                name: 'segmentRed',
+                                value: object.active || object.critical ? 1 : 0,
+                            },
+                            {
+                                name: 'segmentGreen',
+                                value: 1,
+                            },
+                            {
+                                name: 'segmentBlue',
+                                value: object.active ? 1 : 0,
                             },
                             {
                                 name: 'segmentAlpha',

@@ -12,7 +12,7 @@ from sonolus.script.archetype import PlayArchetype
 from sonolus.script.level import Level, LevelData
 from sonolus.script.timing import TimescaleEase
 
-from sekai.lib.connector import ConnectorKind
+from sekai.lib.connector import ConnectorKind, is_guide_connector
 from sekai.lib.ease import EaseType
 from sekai.lib.layout import FlickDirection
 from sekai.lib.level_config import EngineRevision
@@ -107,8 +107,10 @@ class LevelNote:
     timescale_group: LevelTimescaleGroup | None = None
     direction: FlickDirection = FlickDirection.UP_OMNI
     is_fake: bool = False
-    is_separator: bool = False
     segment_kind: ConnectorKind = ConnectorKind.NONE
+    segment_red: float = -1.0
+    segment_green: float = -1.0
+    segment_blue: float = -1.0
     segment_alpha: float = 1.0
     connector_ease: EaseType = EaseType.LINEAR
     attach: LevelSlide | None = None
@@ -174,7 +176,7 @@ def build_level(
     note_entities: list[BaseNote] = []
     slide_non_attached: dict[int, list[BaseNote]] = {}
 
-    def emit_note(level_note: LevelNote, force_separator: bool = False) -> BaseNote:
+    def emit_note(level_note: LevelNote) -> BaseNote:
         ts_group = resolve_ts_group(level_note.timescale_group)
         archetype_cls = _note_archetype_for(level_note.kind, level_note.is_fake)
         kwargs: dict[str, object] = {
@@ -183,8 +185,10 @@ def build_level(
             "size": level_note.size,
             "direction": level_note.direction,
             "connector_ease": level_note.connector_ease,
-            "is_separator": level_note.is_separator or force_separator,
             "segment_kind": level_note.segment_kind,
+            "segment_red": level_note.segment_red,
+            "segment_green": level_note.segment_green,
+            "segment_blue": level_note.segment_blue,
             "segment_alpha": level_note.segment_alpha,
             "timescale_group": ts_group.ref(),
         }
@@ -206,9 +210,8 @@ def build_level(
         last_index = len(slide.notes) - 1
         built: list[BaseNote] = []
         non_attached: list[BaseNote] = []
-        for i, ln in enumerate(slide.notes):
-            is_endpoint = i in (0, last_index)
-            note = emit_note(ln, force_separator=is_endpoint)
+        for ln in slide.notes:
+            note = emit_note(ln)
             built.append(note)
             if ln.attach is None:
                 non_attached.append(note)
@@ -219,31 +222,33 @@ def build_level(
             prev_note.next_ref = next_note.ref()
         slide_non_attached[id(slide)] = non_attached
 
-        separator_indices = sorted(i for i, ln in enumerate(slide.notes) if i in (0, last_index) or ln.is_separator)
-        separator_index_set = set(separator_indices)
-        section_by_span_head = _input_section_bounds(slide.notes, separator_indices)
-        boundary_indices = [i for i, ln in enumerate(slide.notes) if i in separator_index_set or ln.attach is None]
+        boundary_indices = [i for i, ln in enumerate(slide.notes) if i in (0, last_index) or ln.attach is None]
+        segment_kinds = {slide.notes[head].segment_kind for head, _ in itertools.pairwise(boundary_indices)}
+        if len(segment_kinds) > 1:
+            raise ValueError("A slide must use one segment kind throughout")
+        slide_kind = next(iter(segment_kinds))
+
         for a, b in itertools.pairwise(boundary_indices):
-            seg_kind = slide.notes[a].segment_kind
-            if seg_kind == ConnectorKind.NONE:
+            if slide_kind == ConnectorKind.NONE:
                 continue
-            seg_head_idx = a if a in separator_index_set else max(s for s in separator_indices if s < a)
-            seg_tail_idx = b if b in separator_index_set else min(s for s in separator_indices if s > b)
-            seg_head = built[seg_head_idx]
-            seg_tail = built[seg_tail_idx]
+            if is_guide_connector(slide_kind):
+                segment_head = built[a]
+                segment_tail = built[b]
+            else:
+                segment_head = built[0]
+                segment_tail = built[last_index]
             connector = Connector(
                 head_ref=built[a].ref(),
                 tail_ref=built[b].ref(),
-                segment_head_ref=seg_head.ref(),
-                segment_tail_ref=seg_tail.ref(),
+                segment_head_ref=segment_head.ref(),
+                segment_tail_ref=segment_tail.ref(),
             )
-            if seg_kind in _INPUT_TRACKED_SEGMENT_KINDS:
-                section_head_idx, section_tail_idx = section_by_span_head[seg_head_idx]
-                connector.active_head_ref = built[section_head_idx].ref()
-                connector.active_tail_ref = built[section_tail_idx].ref()
+            if slide_kind in _INPUT_TRACKED_SEGMENT_KINDS:
+                connector.active_head_ref = built[0].ref()
+                connector.active_tail_ref = built[last_index].ref()
             out_entities.append(connector)
 
-        _emit_damage_ticks(slide, built, non_attached, separator_indices, emit_note)
+        _emit_damage_ticks(slide, built, non_attached, slide_kind, emit_note)
 
     for note, slide in pending_attachments:
         candidates = slide_non_attached[id(slide)]
@@ -286,59 +291,21 @@ def build_level(
     )
 
 
-def _input_section_bounds(notes: list[LevelNote], separator_indices: list[int]) -> dict[int, tuple[int, int]]:
-    """Map each separator span's head index to the separator indices bounding its input section.
-
-    Consecutive spans whose kinds share an input class (active hold, or damage) form one section
-    with a single active head/tail, so e.g. an active slide with mid-slide separators is one hold
-    and a multi-segment damage slide shows its touched state as a whole.
-    """
-
-    def input_class(kind: ConnectorKind) -> int:
-        # Fake actives get their own class: sharing a head with a real hold would leak their
-        # forced-active state onto it.
-        match kind:
-            case ConnectorKind.ACTIVE_NORMAL | ConnectorKind.ACTIVE_CRITICAL:
-                return 1
-            case ConnectorKind.DAMAGE:
-                return 2
-            case ConnectorKind.ACTIVE_FAKE_NORMAL | ConnectorKind.ACTIVE_FAKE_CRITICAL:
-                return 3
-            case _:
-                return 0
-
-    spans = list(itertools.pairwise(separator_indices))
-    classes = [input_class(notes[head].segment_kind) for head, _ in spans]
-    bounds: dict[int, tuple[int, int]] = {}
-    i = 0
-    while i < len(spans):
-        j = i
-        while j + 1 < len(spans) and classes[i] != 0 and classes[j + 1] == classes[i]:
-            j += 1
-        for k in range(i, j + 1):
-            bounds[spans[k][0]] = (spans[i][0], spans[j][1])
-        i = j + 1
-    return bounds
-
-
 def _emit_damage_ticks(
     slide: LevelSlide,
     built: list[BaseNote],
     non_attached: list[BaseNote],
-    separator_indices: list[int],
+    slide_kind: ConnectorKind,
     emit_note: Callable[..., BaseNote],
 ) -> None:
-    """Emit a TransientHiddenDamageTickNote every half beat over each DAMAGE segment of the slide.
+    """Emit a TransientHiddenDamageTickNote every half beat over a DAMAGE slide."""
+    if slide_kind != ConnectorKind.DAMAGE:
+        return
+    head_ln = slide.notes[0]
+    head_beat = head_ln.beat
+    tail_beat = slide.notes[-1].beat
 
-    Ticks cover both segment endpoints, except that the slide's very first beat never gets a tick
-    and a damage->damage joint is emitted once, by the earlier segment. A damage run ending off the
-    half-beat grid gets a tick at its final beat, since no grid tick's window covers that stretch.
-    """
-    spans = list(itertools.pairwise(separator_indices))
-    section_by_span_head = _input_section_bounds(slide.notes, separator_indices)
-    slide_start_beat = slide.notes[0].beat
-
-    def emit_tick(beat: float, head_ln: LevelNote, section_head_idx: int) -> None:
+    def emit_tick(beat: float) -> None:
         tick = emit_note(
             LevelNote(
                 beat=beat,
@@ -353,30 +320,17 @@ def _emit_damage_ticks(
         tick.attach_head_ref = attach_head.ref()
         tick.attach_tail_ref = attach_tail.ref()
         tick.is_attached = True
-        tick.active_head_ref = built[section_head_idx].ref()
+        tick.active_head_ref = built[0].ref()
 
-    for span_i, (span_head_idx, span_tail_idx) in enumerate(spans):
-        head_ln = slide.notes[span_head_idx]
-        if head_ln.segment_kind != ConnectorKind.DAMAGE:
+    first_step = math.ceil(head_beat / _DAMAGE_TICK_STEP - _BEAT_EPSILON)
+    last_step = math.floor(tail_beat / _DAMAGE_TICK_STEP + _BEAT_EPSILON)
+    for step in range(first_step, last_step + 1):
+        beat = step * _DAMAGE_TICK_STEP
+        if abs(beat - head_beat) < _BEAT_EPSILON:
             continue
-        head_beat = head_ln.beat
-        tail_beat = slide.notes[span_tail_idx].beat
-        prev_is_damage = span_i > 0 and slide.notes[spans[span_i - 1][0]].segment_kind == ConnectorKind.DAMAGE
-        next_is_damage = (
-            span_i + 1 < len(spans) and slide.notes[spans[span_i + 1][0]].segment_kind == ConnectorKind.DAMAGE
-        )
-        section_head_idx = section_by_span_head[span_head_idx][0]
-        first_step = math.ceil(head_beat / _DAMAGE_TICK_STEP - _BEAT_EPSILON)
-        last_step = math.floor(tail_beat / _DAMAGE_TICK_STEP + _BEAT_EPSILON)
-        for step in range(first_step, last_step + 1):
-            beat = step * _DAMAGE_TICK_STEP
-            if abs(beat - slide_start_beat) < _BEAT_EPSILON:
-                continue
-            if prev_is_damage and abs(beat - head_beat) < _BEAT_EPSILON:
-                continue
-            emit_tick(beat, head_ln, section_head_idx)
-        if not next_is_damage and tail_beat > last_step * _DAMAGE_TICK_STEP + _BEAT_EPSILON:
-            emit_tick(tail_beat, head_ln, section_head_idx)
+        emit_tick(beat)
+    if tail_beat > last_step * _DAMAGE_TICK_STEP + _BEAT_EPSILON:
+        emit_tick(tail_beat)
 
 
 def _bracketing_non_attached(non_attached: list[BaseNote], beat: float) -> tuple[BaseNote, BaseNote]:

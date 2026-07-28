@@ -95,15 +95,15 @@ fade_alpha_mapping = {
     2: (0.0, 1.0),
 }
 
-guide_kind_mapping = {
-    0: ConnectorKind.GUIDE_NEUTRAL,
-    1: ConnectorKind.GUIDE_RED,
-    2: ConnectorKind.GUIDE_GREEN,
-    3: ConnectorKind.GUIDE_BLUE,
-    4: ConnectorKind.GUIDE_YELLOW,
-    5: ConnectorKind.GUIDE_PURPLE,
-    6: ConnectorKind.GUIDE_CYAN,
-    7: ConnectorKind.GUIDE_BLACK,
+guide_color_mapping = {
+    0: (1.0, 1.0, 1.0),
+    1: (1.0, 0.0, 0.0),
+    2: (0.0, 1.0, 0.0),
+    3: (0.0, 0.0, 1.0),
+    4: (1.0, 1.0, 0.0),
+    5: (1.0, 0.0, 1.0),
+    6: (0.0, 1.0, 1.0),
+    7: (0.0, 0.0, 0.0),
 }
 
 
@@ -288,6 +288,9 @@ def convert_guides(
         timescale_group: Any,
         pos: Literal["segment_head", "segment_tail", "head", "tail"],
         segment_kind: ConnectorKind | None = None,
+        segment_red: float | None = None,
+        segment_green: float | None = None,
+        segment_blue: float | None = None,
         segment_alpha: float | None = None,
         connector_ease: EaseType | None = None,
     ) -> BaseNote:
@@ -300,11 +303,20 @@ def convert_guides(
                     and anchor.size == size
                     and anchor.timescale_group == timescale_group
                     and (segment_kind is None or anchor.segment_kind in (segment_kind, -1))
+                    and (segment_red is None or anchor.segment_red in (segment_red, -1))
+                    and (segment_green is None or anchor.segment_green in (segment_green, -1))
+                    and (segment_blue is None or anchor.segment_blue in (segment_blue, -1))
                     and (segment_alpha is None or anchor.segment_alpha in (segment_alpha, -1))
                     and (connector_ease is None or anchor.connector_ease in (connector_ease, -1))
                 ):
                     if segment_kind is not None and anchor.segment_kind == -1:
                         anchor.segment_kind = segment_kind
+                    if segment_red is not None and anchor.segment_red == -1:
+                        anchor.segment_red = segment_red
+                    if segment_green is not None and anchor.segment_green == -1:
+                        anchor.segment_green = segment_green
+                    if segment_blue is not None and anchor.segment_blue == -1:
+                        anchor.segment_blue = segment_blue
                     if segment_alpha is not None and anchor.segment_alpha == -1:
                         anchor.segment_alpha = segment_alpha
                     if connector_ease is not None and anchor.connector_ease == -1:
@@ -317,6 +329,9 @@ def convert_guides(
             size=size,
             timescale_group=timescale_group,
             segment_kind=segment_kind if segment_kind is not None else -1,
+            segment_red=segment_red if segment_red is not None else -1,
+            segment_green=segment_green if segment_green is not None else -1,
+            segment_blue=segment_blue if segment_blue is not None else -1,
             segment_alpha=segment_alpha if segment_alpha is not None else -1,
             connector_ease=connector_ease if connector_ease is not None else -1,
         )
@@ -346,7 +361,9 @@ def convert_guides(
         end_timescale_group = timescale_groups_by_index[entity.data["endTimeScaleGroup"]].ref()
         ease = ease_type_mapping[entity.data.get("ease", 0)]
         start_alpha, end_alpha = fade_alpha_mapping[entity.data.get("fade", 1)]
-        kind = guide_kind_mapping[entity.data.get("color", 0)]
+        color = entity.data.get("color", 0)
+        kind = ConnectorKind.GUIDE_GHOST
+        red, green, blue = guide_color_mapping[color]
 
         start = get_anchor(
             beat=start_beat,
@@ -355,6 +372,9 @@ def convert_guides(
             pos="segment_head",
             timescale_group=start_timescale_group,
             segment_kind=kind,
+            segment_red=red,
+            segment_green=green,
+            segment_blue=blue,
             segment_alpha=start_alpha,
         )
         end = get_anchor(
@@ -364,6 +384,9 @@ def convert_guides(
             pos="segment_tail",
             timescale_group=end_timescale_group,
             segment_kind=kind,
+            segment_red=red,
+            segment_green=green,
+            segment_blue=blue,
             segment_alpha=end_alpha,
         )
         head = get_anchor(
@@ -373,6 +396,9 @@ def convert_guides(
             pos="head",
             timescale_group=head_timescale_group,
             segment_kind=kind,
+            segment_red=red,
+            segment_green=green,
+            segment_blue=blue,
             connector_ease=ease,
         )
         tail = get_anchor(
@@ -382,6 +408,9 @@ def convert_guides(
             pos="tail",
             timescale_group=tail_timescale_group,
             segment_kind=kind,
+            segment_red=red,
+            segment_green=green,
+            segment_blue=blue,
         )
         connector = Connector(
             head_ref=head.ref(),
@@ -394,7 +423,13 @@ def convert_guides(
     for anchor_list in anchors_by_beat.values():
         for anchor in anchor_list:
             if anchor.segment_kind == -1:
-                anchor.segment_kind = ConnectorKind.GUIDE_NEUTRAL
+                anchor.segment_kind = ConnectorKind.GUIDE_GHOST
+            if anchor.segment_red == -1:
+                anchor.segment_red = 1.0
+            if anchor.segment_green == -1:
+                anchor.segment_green = 1.0
+            if anchor.segment_blue == -1:
+                anchor.segment_blue = 1.0
             if anchor.segment_alpha == -1:
                 anchor.segment_alpha = 1.0
             if anchor.connector_ease == -1:

@@ -42,7 +42,10 @@ from sekai.lib.timescale import iter_timescale_changes_in_group_from_time
 
 CONNECTOR_TRAIL_SPAWN_PERIOD = 0.1
 CONNECTOR_SLOT_SPAWN_PERIOD = 0.2
+CONNECTOR_THROUGH_JUDGE_LINE_DESPAWN_DELAY = 5.0
 CONNECTOR_LENIENCY = 1
+GUIDE_CONNECTOR_BLEND_PATH_SAMPLES = 8
+GUIDE_CONNECTOR_BLEND_PATH_SEGMENTS = 128
 
 
 class ConnectorKind(IntEnum):
@@ -55,6 +58,9 @@ class ConnectorKind(IntEnum):
     ACTIVE_FAKE_CRITICAL = 52
     FAKE_DAMAGE = 53
 
+    # Use GUIDE_GHOST with explicit RGB values by default unless a predefined
+    # guide palette kind is required for a specific compatibility reason.
+    GUIDE_GHOST = 100
     GUIDE_NEUTRAL = 101
     GUIDE_RED = 102
     GUIDE_GREEN = 103
@@ -73,6 +79,7 @@ ActiveConnectorKind = Literal[
 ]
 
 GuideConnectorKind = Literal[
+    ConnectorKind.GUIDE_GHOST,
     ConnectorKind.GUIDE_NEUTRAL,
     ConnectorKind.GUIDE_RED,
     ConnectorKind.GUIDE_GREEN,
@@ -82,6 +89,12 @@ GuideConnectorKind = Literal[
     ConnectorKind.GUIDE_CYAN,
     ConnectorKind.GUIDE_BLACK,
 ]
+
+
+class GuideColor(Record):
+    red: float
+    green: float
+    blue: float
 
 
 class ConnectorVisualState(IntEnum):
@@ -96,6 +109,58 @@ def is_fake_active_connector(kind: ConnectorKind) -> bool:
 
 def is_fake_connector(kind: ConnectorKind) -> bool:
     return is_fake_active_connector(kind) or kind == ConnectorKind.FAKE_DAMAGE
+
+
+def is_guide_connector(kind: ConnectorKind) -> bool:
+    return kind in {
+        ConnectorKind.GUIDE_GHOST,
+        ConnectorKind.GUIDE_NEUTRAL,
+        ConnectorKind.GUIDE_RED,
+        ConnectorKind.GUIDE_GREEN,
+        ConnectorKind.GUIDE_BLUE,
+        ConnectorKind.GUIDE_YELLOW,
+        ConnectorKind.GUIDE_PURPLE,
+        ConnectorKind.GUIDE_CYAN,
+        ConnectorKind.GUIDE_BLACK,
+    }
+
+
+def get_guide_connector_color(kind: ConnectorKind) -> GuideColor:
+    result = +GuideColor
+    match kind:
+        case ConnectorKind.GUIDE_GHOST | ConnectorKind.GUIDE_NEUTRAL:
+            result @= GuideColor(red=1.0, green=1.0, blue=1.0)
+        case ConnectorKind.GUIDE_RED:
+            result @= GuideColor(red=1.0, green=0.0, blue=0.0)
+        case ConnectorKind.GUIDE_GREEN:
+            result @= GuideColor(red=0.0, green=1.0, blue=0.0)
+        case ConnectorKind.GUIDE_BLUE:
+            result @= GuideColor(red=0.0, green=0.0, blue=1.0)
+        case ConnectorKind.GUIDE_YELLOW:
+            result @= GuideColor(red=1.0, green=1.0, blue=0.0)
+        case ConnectorKind.GUIDE_PURPLE:
+            result @= GuideColor(red=1.0, green=0.0, blue=1.0)
+        case ConnectorKind.GUIDE_CYAN:
+            result @= GuideColor(red=0.0, green=1.0, blue=1.0)
+        case ConnectorKind.GUIDE_BLACK:
+            result @= GuideColor(red=0.0, green=0.0, blue=0.0)
+        case _:
+            result @= GuideColor(red=1.0, green=1.0, blue=1.0)
+    return result
+
+
+def resolve_guide_connector_color(
+    kind: ConnectorKind,
+    red: float,
+    green: float,
+    blue: float,
+) -> GuideColor:
+    fallback = get_guide_connector_color(kind)
+    return GuideColor(
+        red=clamp(red, 0.0, 1.0) if red >= 0.0 else fallback.red,
+        green=clamp(green, 0.0, 1.0) if green >= 0.0 else fallback.green,
+        blue=clamp(blue, 0.0, 1.0) if blue >= 0.0 else fallback.blue,
+    )
 
 
 def should_show_connector_hitbox(kind: ConnectorKind) -> bool:
@@ -125,7 +190,7 @@ def get_active_connector_sprites(kind: ActiveConnectorKind) -> ActiveConnectorSp
 def get_guide_connector_sprite(kind: GuideConnectorKind) -> Sprite:
     result = +Sprite
     match kind:
-        case ConnectorKind.GUIDE_NEUTRAL:
+        case ConnectorKind.GUIDE_GHOST | ConnectorKind.GUIDE_NEUTRAL:
             result @= ActiveSkin.guide_neutral
         case ConnectorKind.GUIDE_RED:
             result @= ActiveSkin.guide_red
@@ -175,7 +240,8 @@ def get_connector_z(kind: ConnectorKind, target_time: float, lane: float, active
                 invert_time=True,
             )
         case (
-            ConnectorKind.GUIDE_NEUTRAL
+            ConnectorKind.GUIDE_GHOST
+            | ConnectorKind.GUIDE_NEUTRAL
             | ConnectorKind.GUIDE_RED
             | ConnectorKind.GUIDE_GREEN
             | ConnectorKind.GUIDE_BLUE
@@ -188,7 +254,7 @@ def get_connector_z(kind: ConnectorKind, target_time: float, lane: float, active
                 LAYER_GUIDE_CONNECTOR,
                 time=target_time,
                 lane=lane,
-                etc=kind - ConnectorKind.GUIDE_NEUTRAL,
+                etc=0 if kind == ConnectorKind.GUIDE_GHOST else kind - ConnectorKind.GUIDE_NEUTRAL,
                 invert_time=True,
             )
         case ConnectorKind.DAMAGE | ConnectorKind.FAKE_DAMAGE:
@@ -232,7 +298,8 @@ def get_connector_alpha_option(kind: ConnectorKind) -> float:
         case ConnectorKind.DAMAGE | ConnectorKind.FAKE_DAMAGE:
             return Options.slide_alpha
         case (
-            ConnectorKind.GUIDE_NEUTRAL
+            ConnectorKind.GUIDE_GHOST
+            | ConnectorKind.GUIDE_NEUTRAL
             | ConnectorKind.GUIDE_RED
             | ConnectorKind.GUIDE_GREEN
             | ConnectorKind.GUIDE_BLUE
@@ -260,7 +327,8 @@ def get_connector_quality_option(kind: ConnectorKind) -> float:
         case ConnectorKind.DAMAGE | ConnectorKind.FAKE_DAMAGE:
             return Options.slide_quality
         case (
-            ConnectorKind.GUIDE_NEUTRAL
+            ConnectorKind.GUIDE_GHOST
+            | ConnectorKind.GUIDE_NEUTRAL
             | ConnectorKind.GUIDE_RED
             | ConnectorKind.GUIDE_GREEN
             | ConnectorKind.GUIDE_BLUE
@@ -292,8 +360,14 @@ def draw_connector(
     tail_ease_frac: float,
     segment_head_target_time: float,
     segment_head_lane: float,
+    segment_head_red: float,
+    segment_head_green: float,
+    segment_head_blue: float,
     segment_head_alpha: float,
     segment_tail_target_time: float,
+    segment_tail_red: float,
+    segment_tail_green: float,
+    segment_tail_blue: float,
     segment_tail_alpha: float,
 ):
     if (
@@ -313,6 +387,19 @@ def draw_connector(
         tail_lane = head_lane
         tail_size = head_size
 
+    segment_head_color = resolve_guide_connector_color(
+        kind,
+        segment_head_red,
+        segment_head_green,
+        segment_head_blue,
+    )
+    segment_tail_color = resolve_guide_connector_color(
+        kind,
+        segment_tail_red,
+        segment_tail_green,
+        segment_tail_blue,
+    )
+
     normal_sprite = Sprite(-1)
     active_sprite = Sprite(-1)
     match kind:
@@ -326,7 +413,8 @@ def draw_connector(
             normal_sprite @= sprites.connection.normal
             active_sprite @= sprites.connection.active
         case (
-            ConnectorKind.GUIDE_NEUTRAL
+            ConnectorKind.GUIDE_GHOST
+            | ConnectorKind.GUIDE_NEUTRAL
             | ConnectorKind.GUIDE_RED
             | ConnectorKind.GUIDE_GREEN
             | ConnectorKind.GUIDE_BLUE
@@ -357,7 +445,8 @@ def draw_connector(
             if visual_state == ConnectorVisualState.INACTIVE:
                 visual_state = ConnectorVisualState.ACTIVE
         case (
-            ConnectorKind.GUIDE_NEUTRAL
+            ConnectorKind.GUIDE_GHOST
+            | ConnectorKind.GUIDE_NEUTRAL
             | ConnectorKind.GUIDE_RED
             | ConnectorKind.GUIDE_GREEN
             | ConnectorKind.GUIDE_BLUE
@@ -379,8 +468,50 @@ def draw_connector(
     tail_alpha = remap_clamped(
         segment_head_target_time, segment_tail_target_time, segment_head_alpha, segment_tail_alpha, tail_target_time
     )
+    head_red = remap_clamped(
+        segment_head_target_time,
+        segment_tail_target_time,
+        segment_head_color.red,
+        segment_tail_color.red,
+        head_target_time,
+    )
+    head_green = remap_clamped(
+        segment_head_target_time,
+        segment_tail_target_time,
+        segment_head_color.green,
+        segment_tail_color.green,
+        head_target_time,
+    )
+    head_blue = remap_clamped(
+        segment_head_target_time,
+        segment_tail_target_time,
+        segment_head_color.blue,
+        segment_tail_color.blue,
+        head_target_time,
+    )
+    tail_red = remap_clamped(
+        segment_head_target_time,
+        segment_tail_target_time,
+        segment_head_color.red,
+        segment_tail_color.red,
+        tail_target_time,
+    )
+    tail_green = remap_clamped(
+        segment_head_target_time,
+        segment_tail_target_time,
+        segment_head_color.green,
+        segment_tail_color.green,
+        tail_target_time,
+    )
+    tail_blue = remap_clamped(
+        segment_head_target_time,
+        segment_tail_target_time,
+        segment_head_color.blue,
+        segment_tail_color.blue,
+        tail_target_time,
+    )
 
-    if time() >= tail_target_time:
+    if time() >= tail_target_time and not is_guide_connector(kind):
         return
 
     z_normal = get_connector_z(kind, segment_head_target_time, segment_head_lane, active=False)
@@ -403,12 +534,18 @@ def draw_connector(
         head_visual_progress=head_visual_progress,
         head_target_time=head_target_time,
         head_ease_frac=head_ease_frac,
+        head_red=head_red,
+        head_green=head_green,
+        head_blue=head_blue,
         head_alpha=head_alpha,
         tail_lane=tail_lane,
         tail_size=tail_size,
         tail_visual_progress=tail_visual_progress,
         tail_target_time=tail_target_time,
         tail_ease_frac=tail_ease_frac,
+        tail_red=tail_red,
+        tail_green=tail_green,
+        tail_blue=tail_blue,
         tail_alpha=tail_alpha,
     )
 
@@ -426,14 +563,21 @@ def draw_connector_default(
     head_visual_progress: float,
     head_target_time: float,
     head_ease_frac: float,
+    head_red: float,
+    head_green: float,
+    head_blue: float,
     head_alpha: float,
     tail_lane: float,
     tail_size: float,
     tail_visual_progress: float,
     tail_target_time: float,
     tail_ease_frac: float,
+    tail_red: float,
+    tail_green: float,
+    tail_blue: float,
     tail_alpha: float,
 ):
+    is_guide = is_guide_connector(kind)
     start_visual_progress = clamp(head_visual_progress, DynamicLayout.progress_start, DynamicLayout.progress_cutoff)
     end_visual_progress = clamp(tail_visual_progress, DynamicLayout.progress_start, DynamicLayout.progress_cutoff)
     start_frac = unlerp_clamped(head_visual_progress, tail_visual_progress, start_visual_progress)
@@ -450,6 +594,13 @@ def draw_connector_default(
     end_lane = lerp(head_lane, tail_lane, end_interp_frac)
     start_size = max(1e-3, lerp(head_size, tail_size, start_interp_frac))  # Lightweight rendering needs >0 size.
     end_size = max(1e-3, lerp(head_size, tail_size, end_interp_frac))  # Lightweight rendering needs >0 size.
+    start_red = 0.0
+    start_green = 0.0
+    start_blue = 0.0
+    if is_guide:
+        start_red = lerp(head_red, tail_red, start_frac)
+        start_green = lerp(head_green, tail_green, start_frac)
+        start_blue = lerp(head_blue, tail_blue, start_frac)
     start_alpha = lerp(head_alpha, tail_alpha, start_frac)
     end_alpha = lerp(head_alpha, tail_alpha, end_frac)
     start_pos_y = pre_rotation_vec_at(start_lane, start_travel).y
@@ -511,12 +662,32 @@ def draw_connector_default(
         alpha_change_delta**0.8 * 3,
         alpha_change_delta**0.5 * abs(start_pos_y - end_pos_y) * 3,
     )
+    rgba_segment_count = 0.0
+    if is_guide:
+        rgba_segment_count = get_guide_blended_rgba_segment_count(
+            head_red,
+            head_green,
+            head_blue,
+            head_alpha,
+            tail_red,
+            tail_green,
+            tail_blue,
+            tail_alpha,
+            get_connector_alpha_option(kind),
+        )
     quality = get_connector_quality_option(kind)
-    segment_count = max(1, ceil(max(curve_change_scale, alpha_change_scale) * quality * 10))
+    segment_count = max(
+        1,
+        ceil(max(curve_change_scale, alpha_change_scale) * quality * 10),
+        ceil(rgba_segment_count * quality),
+    )
 
     last_travel = start_travel
     last_lane = start_lane
     last_size = start_size
+    last_red = start_red
+    last_green = start_green
+    last_blue = start_blue
     last_alpha = start_alpha
     last_target_time = lerp(head_target_time, tail_target_time, start_frac)
 
@@ -530,6 +701,13 @@ def draw_connector_default(
         next_travel = approach(next_visual_progress)
         next_lane = lerp(head_lane, tail_lane, next_interp_frac)
         next_size = max(1e-3, lerp(head_size, tail_size, next_interp_frac))
+        next_red = 0.0
+        next_green = 0.0
+        next_blue = 0.0
+        if is_guide:
+            next_red = lerp(head_red, tail_red, next_frac)
+            next_green = lerp(head_green, tail_green, next_frac)
+            next_blue = lerp(head_blue, tail_blue, next_frac)
         next_alpha = lerp(head_alpha, tail_alpha, next_frac)
         next_target_time = lerp(head_target_time, tail_target_time, next_frac)
 
@@ -551,13 +729,139 @@ def draw_connector_default(
             end_travel=next_travel,
         )
 
-        draw_connector_quad(layout, visual_state, normal_sprite, active_sprite, z_normal, z_active, base_a)
+        if is_guide:
+            draw_guide_connector_quad(
+                layout,
+                z_normal,
+                (last_red + next_red) / 2,
+                (last_green + next_green) / 2,
+                (last_blue + next_blue) / 2,
+                base_a,
+            )
+        else:
+            draw_connector_quad(layout, visual_state, normal_sprite, active_sprite, z_normal, z_active, base_a)
 
         last_travel = next_travel
         last_lane = next_lane
         last_size = next_size
+        last_red = next_red
+        last_green = next_green
+        last_blue = next_blue
         last_alpha = next_alpha
         last_target_time = next_target_time
+
+
+def get_guide_blended_rgba_segment_count(
+    head_red: float,
+    head_green: float,
+    head_blue: float,
+    head_alpha: float,
+    tail_red: float,
+    tail_green: float,
+    tail_blue: float,
+    tail_alpha: float,
+    alpha_multiplier: float,
+) -> float:
+    last_alpha = clamp(head_alpha * alpha_multiplier, 0.0, 1.0)
+    last_black_red = last_alpha * head_red
+    last_black_green = last_alpha * head_green
+    last_black_blue = last_alpha * head_blue
+    last_white_red = last_black_red + 1 - last_alpha
+    last_white_green = last_black_green + 1 - last_alpha
+    last_white_blue = last_black_blue + 1 - last_alpha
+    blend_path_length = 0.0
+
+    # Source-over differences are largest against either black or white.
+    # Sampling both also captures the quadratic path from RGBA interpolation.
+    for i in range(1, GUIDE_CONNECTOR_BLEND_PATH_SAMPLES + 1):
+        frac = i / GUIDE_CONNECTOR_BLEND_PATH_SAMPLES
+        red = lerp(head_red, tail_red, frac)
+        green = lerp(head_green, tail_green, frac)
+        blue = lerp(head_blue, tail_blue, frac)
+        alpha = clamp(lerp(head_alpha, tail_alpha, frac) * alpha_multiplier, 0.0, 1.0)
+        black_red = alpha * red
+        black_green = alpha * green
+        black_blue = alpha * blue
+        white_red = black_red + 1 - alpha
+        white_green = black_green + 1 - alpha
+        white_blue = black_blue + 1 - alpha
+        blend_path_length += max(
+            abs(black_red - last_black_red),
+            abs(black_green - last_black_green),
+            abs(black_blue - last_black_blue),
+            abs(white_red - last_white_red),
+            abs(white_green - last_white_green),
+            abs(white_blue - last_white_blue),
+        )
+        last_black_red = black_red
+        last_black_green = black_green
+        last_black_blue = black_blue
+        last_white_red = white_red
+        last_white_green = white_green
+        last_white_blue = white_blue
+
+    return blend_path_length * GUIDE_CONNECTOR_BLEND_PATH_SEGMENTS
+
+
+def draw_guide_connector_quad(
+    layout: QuadLike,
+    z: ZIndexes,
+    red: float,
+    green: float,
+    blue: float,
+    alpha: float,
+):
+    red = clamp(red, 0.0, 1.0)
+    green = clamp(green, 0.0, 1.0)
+    blue = clamp(blue, 0.0, 1.0)
+    alpha = clamp(alpha, 0.0, 1.0)
+
+    # Trilinear weights over the eight RGB cube corners.
+    black = alpha * (1 - red) * (1 - green) * (1 - blue)
+    red_only = alpha * red * (1 - green) * (1 - blue)
+    green_only = alpha * (1 - red) * green * (1 - blue)
+    blue_only = alpha * (1 - red) * (1 - green) * blue
+    yellow = alpha * red * green * (1 - blue)
+    magenta = alpha * red * (1 - green) * blue
+    cyan = alpha * (1 - red) * green * blue
+    neutral = alpha * red * green * blue
+
+    prefix = black
+    draw_guide_connector_color_layer(layout, z, ConnectorKind.GUIDE_BLACK, black, alpha, prefix, 0)
+    prefix += red_only
+    draw_guide_connector_color_layer(layout, z, ConnectorKind.GUIDE_RED, red_only, alpha, prefix, 1)
+    prefix += green_only
+    draw_guide_connector_color_layer(layout, z, ConnectorKind.GUIDE_GREEN, green_only, alpha, prefix, 2)
+    prefix += blue_only
+    draw_guide_connector_color_layer(layout, z, ConnectorKind.GUIDE_BLUE, blue_only, alpha, prefix, 3)
+    prefix += yellow
+    draw_guide_connector_color_layer(layout, z, ConnectorKind.GUIDE_YELLOW, yellow, alpha, prefix, 4)
+    prefix += magenta
+    draw_guide_connector_color_layer(layout, z, ConnectorKind.GUIDE_PURPLE, magenta, alpha, prefix, 5)
+    prefix += cyan
+    draw_guide_connector_color_layer(layout, z, ConnectorKind.GUIDE_CYAN, cyan, alpha, prefix, 6)
+    prefix += neutral
+    draw_guide_connector_color_layer(layout, z, ConnectorKind.GUIDE_NEUTRAL, neutral, alpha, prefix, 7)
+
+
+def draw_guide_connector_color_layer(
+    layout: QuadLike,
+    z: ZIndexes,
+    kind: GuideConnectorKind,
+    contribution: float,
+    total_alpha: float,
+    prefix: float,
+    order: int,
+):
+    if contribution <= 0.0:
+        return
+    # Convert the desired premultiplied contribution into a source-over layer alpha.
+    layer_alpha = contribution / max(1e-6, 1 - total_alpha + prefix)
+    get_guide_connector_sprite(kind).draw(
+        layout,
+        z=(z.z1, z.z2, z.z3, z.z4 + order / 1000),
+        a=layer_alpha,
+    )
 
 
 def draw_connector_quad(

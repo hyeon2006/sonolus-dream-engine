@@ -13,6 +13,7 @@ from sekai.debug import DISABLE_NOTES
 from sekai.lib import archetype_names
 from sekai.lib.connector import (
     CONNECTOR_SLOT_SPAWN_PERIOD,
+    CONNECTOR_THROUGH_JUDGE_LINE_DESPAWN_DELAY,
     CONNECTOR_TRAIL_SPAWN_PERIOD,
     ActiveConnectorInfo,
     ConnectorKind,
@@ -23,6 +24,7 @@ from sekai.lib.connector import (
     draw_connector_slot_glow_effect,
     get_connector_input_leniency,
     is_fake_active_connector,
+    is_guide_connector,
     schedule_connector_sfx,
     should_show_connector_hitbox,
     spawn_connector_slot_particles,
@@ -79,6 +81,8 @@ class Connector(PlayArchetype):
             tail.start_time,
         )
         self.end_time = max(self.visual_active_interval.end, self.input_active_interval.end)
+        if is_guide_connector(self.kind):
+            self.end_time += CONNECTOR_THROUGH_JUDGE_LINE_DESPAWN_DELAY
         self.last_visual_state = ConnectorVisualState.WAITING
 
         if Options.auto_sfx and self.head_ref.index == self.segment_head_ref.index:
@@ -97,6 +101,7 @@ class Connector(PlayArchetype):
                     )
                 case (
                     ConnectorKind.NONE
+                    | ConnectorKind.GUIDE_GHOST
                     | ConnectorKind.GUIDE_NEUTRAL
                     | ConnectorKind.GUIDE_RED
                     | ConnectorKind.GUIDE_GREEN
@@ -169,7 +174,7 @@ class Connector(PlayArchetype):
 
     def update_parallel(self):
         self.draw_hitbox()
-        if time() < self.visual_active_interval.end:
+        if time() < self.visual_active_interval.end or is_guide_connector(self.kind):
             head = self.head
             tail = self.tail
             segment_head = self.segment_head
@@ -200,7 +205,7 @@ class Connector(PlayArchetype):
                 return
             if self.active_tail_ref.index > 0 and self.active_tail.is_despawned:
                 return
-            if time() >= head.target_time:
+            if time() >= head.target_time and not is_guide_connector(self.kind):
                 head_visual_progress = 1.0
                 head_target_time = time()
                 if self.ease_type == EaseType.NONE:
@@ -240,8 +245,14 @@ class Connector(PlayArchetype):
                 tail_ease_frac=tail.tail_ease_frac,
                 segment_head_target_time=segment_head.target_time,
                 segment_head_lane=segment_head.lane,
+                segment_head_red=segment_head.segment_red,
+                segment_head_green=segment_head.segment_green,
+                segment_head_blue=segment_head.segment_blue,
                 segment_head_alpha=segment_head.segment_alpha,
                 segment_tail_target_time=segment_tail.target_time,
+                segment_tail_red=segment_tail.segment_red,
+                segment_tail_green=segment_tail.segment_green,
+                segment_tail_blue=segment_tail.segment_blue,
                 segment_tail_alpha=segment_tail.segment_alpha,
             )
 

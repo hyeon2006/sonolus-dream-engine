@@ -8,12 +8,16 @@ from sonolus.script.sprite import Sprite
 from sekai.lib import archetype_names
 from sekai.lib.connector import (
     ConnectorKind,
+    draw_guide_connector_quad,
     get_active_connector_sprites,
     get_connector_alpha_option,
     get_connector_quality_option,
     get_connector_z,
     get_damage_connector_sprite,
+    get_guide_blended_rgba_segment_count,
     get_guide_connector_sprite,
+    is_guide_connector,
+    resolve_guide_connector_color,
 )
 from sekai.lib.ease import EaseType, ease
 from sekai.lib.layout import get_alpha
@@ -60,8 +64,14 @@ class PreviewConnector(PreviewArchetype):
             tail_ease_frac=tail.tail_ease_frac,
             segment_head_target_time=self.segment_head.target_time,
             segment_head_lane=self.segment_head.lane,
+            segment_head_red=self.segment_head.segment_red,
+            segment_head_green=self.segment_head.segment_green,
+            segment_head_blue=self.segment_head.segment_blue,
             segment_head_alpha=self.segment_head.segment_alpha,
             segment_tail_target_time=self.segment_tail.target_time,
+            segment_tail_red=self.segment_tail.segment_red,
+            segment_tail_green=self.segment_tail.segment_green,
+            segment_tail_blue=self.segment_tail.segment_blue,
             segment_tail_alpha=self.segment_tail.segment_alpha,
         )
 
@@ -95,8 +105,14 @@ def draw_connector(
     tail_ease_frac: float,
     segment_head_target_time: float,
     segment_head_lane: float,
+    segment_head_red: float,
+    segment_head_green: float,
+    segment_head_blue: float,
     segment_head_alpha: float,
     segment_tail_target_time: float,
+    segment_tail_red: float,
+    segment_tail_green: float,
+    segment_tail_blue: float,
     segment_tail_alpha: float,
 ):
     if head_target_time == tail_target_time:
@@ -104,6 +120,19 @@ def draw_connector(
 
     if ease_type == EaseType.NONE:
         tail_size = head_size
+
+    segment_head_color = resolve_guide_connector_color(
+        kind,
+        segment_head_red,
+        segment_head_green,
+        segment_head_blue,
+    )
+    segment_tail_color = resolve_guide_connector_color(
+        kind,
+        segment_tail_red,
+        segment_tail_green,
+        segment_tail_blue,
+    )
 
     normal_sprite = Sprite(-1)
     match kind:
@@ -116,7 +145,8 @@ def draw_connector(
             sprites = get_active_connector_sprites(kind)
             normal_sprite @= sprites.connection.normal
         case (
-            ConnectorKind.GUIDE_NEUTRAL
+            ConnectorKind.GUIDE_GHOST
+            | ConnectorKind.GUIDE_NEUTRAL
             | ConnectorKind.GUIDE_RED
             | ConnectorKind.GUIDE_GREEN
             | ConnectorKind.GUIDE_BLUE
@@ -141,7 +171,8 @@ def draw_connector(
             segment_head_alpha = 1.0
             segment_tail_alpha = 1.0
         case (
-            ConnectorKind.GUIDE_NEUTRAL
+            ConnectorKind.GUIDE_GHOST
+            | ConnectorKind.GUIDE_NEUTRAL
             | ConnectorKind.GUIDE_RED
             | ConnectorKind.GUIDE_GREEN
             | ConnectorKind.GUIDE_BLUE
@@ -162,6 +193,48 @@ def draw_connector(
     tail_alpha = remap_clamped(
         segment_head_target_time, segment_tail_target_time, segment_head_alpha, segment_tail_alpha, tail_target_time
     )
+    head_red = remap_clamped(
+        segment_head_target_time,
+        segment_tail_target_time,
+        segment_head_color.red,
+        segment_tail_color.red,
+        head_target_time,
+    )
+    head_green = remap_clamped(
+        segment_head_target_time,
+        segment_tail_target_time,
+        segment_head_color.green,
+        segment_tail_color.green,
+        head_target_time,
+    )
+    head_blue = remap_clamped(
+        segment_head_target_time,
+        segment_tail_target_time,
+        segment_head_color.blue,
+        segment_tail_color.blue,
+        head_target_time,
+    )
+    tail_red = remap_clamped(
+        segment_head_target_time,
+        segment_tail_target_time,
+        segment_head_color.red,
+        segment_tail_color.red,
+        tail_target_time,
+    )
+    tail_green = remap_clamped(
+        segment_head_target_time,
+        segment_tail_target_time,
+        segment_head_color.green,
+        segment_tail_color.green,
+        tail_target_time,
+    )
+    tail_blue = remap_clamped(
+        segment_head_target_time,
+        segment_tail_target_time,
+        segment_head_color.blue,
+        segment_tail_color.blue,
+        tail_target_time,
+    )
 
     match ease_type:
         case EaseType.NONE | EaseType.LINEAR if head_alpha == tail_alpha:
@@ -169,7 +242,25 @@ def draw_connector(
         case _:
             quality_dist_scale = 100 / PREVIEW_COLUMN_SECS * (tail_target_time - head_target_time)
     quality_alpha_scale = 30 * abs(head_alpha - tail_alpha)
-    segment_count = max(1, ceil(get_connector_quality_option(kind) * max(quality_dist_scale, quality_alpha_scale)))
+    rgba_segment_count = 0.0
+    if is_guide_connector(kind):
+        rgba_segment_count = get_guide_blended_rgba_segment_count(
+            head_red,
+            head_green,
+            head_blue,
+            head_alpha,
+            tail_red,
+            tail_green,
+            tail_blue,
+            tail_alpha,
+            get_connector_alpha_option(kind),
+        )
+    quality = get_connector_quality_option(kind)
+    segment_count = max(
+        1,
+        ceil(quality * max(quality_dist_scale, quality_alpha_scale)),
+        ceil(quality * rgba_segment_count),
+    )
 
     eased_head_ease_frac = ease(ease_type, head_ease_frac)
     eased_tail_ease_frac = ease(ease_type, tail_ease_frac)
@@ -179,6 +270,9 @@ def draw_connector(
 
     last_lane = head.visual_lane_at(head_target_time)
     last_size = head_size
+    last_red = head_red
+    last_green = head_green
+    last_blue = head_blue
     last_alpha = head_alpha
     last_target_time = head_target_time
     last_col = time_to_preview_col(head_target_time)
@@ -195,6 +289,9 @@ def draw_connector(
             tail_lane_at_t = tail.visual_lane_at(next_target_time)
         next_lane = lerp(head_lane_at_t, tail_lane_at_t, next_interp_frac)
         next_size = max(1e-3, lerp(head_size, tail_size, next_interp_frac))
+        next_red = lerp(head_red, tail_red, next_frac)
+        next_green = lerp(head_green, tail_green, next_frac)
+        next_blue = lerp(head_blue, tail_blue, next_frac)
         next_alpha = lerp(head_alpha, tail_alpha, next_frac)
         next_col = time_to_preview_col(next_target_time)
 
@@ -220,10 +317,23 @@ def draw_connector(
                 end_y=end_y,
                 col=col,
             ):
-                normal_sprite.draw(layout, z=z.tuple, a=a)
+                if is_guide_connector(kind):
+                    draw_guide_connector_quad(
+                        layout,
+                        z,
+                        (last_red + next_red) / 2,
+                        (last_green + next_green) / 2,
+                        (last_blue + next_blue) / 2,
+                        a,
+                    )
+                else:
+                    normal_sprite.draw(layout, z=z.tuple, a=a)
 
         last_lane = next_lane
         last_size = next_size
+        last_red = next_red
+        last_green = next_green
+        last_blue = next_blue
         last_alpha = next_alpha
         last_target_time = next_target_time
         last_col = next_col
