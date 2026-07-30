@@ -108,12 +108,6 @@ class Options:
         step=0.05,
         unit=StandardText.PERCENTAGE_UNIT,
     )
-    marker_animation: bool = toggle_option(
-        name=StandardText.MARKER_ANIMATION,
-        category=graphics,
-        scope="Sekai",
-        default=True,
-    )
     sim_line_enabled: bool = toggle_option(
         name=StandardText.SIMLINE,
         category=graphics,
@@ -332,32 +326,4 @@ class Options:
         advanced=True,
         scope="Next Sekai",
         default=False,
-    )
-
-    replay_fallback_option_names = (
-        StandardText.SPEED,
-        StandardText.NOTE_SPEED,
-        StandardText.MIRROR,
-        StandardText.EFFECT,
-        StandardText.EFFECT_AUTO,
-        StandardText.NOTE_EFFECT,
-        StandardText.NOTE_EFFECT_SIZE,
-        StandardText.MARKER_ANIMATION,
-        StandardText.SIMLINE,
-        StandardText.CONNECTOR_ANIMATION,
-        "Slide Alpha",
-        "Guide Alpha",
-        StandardText.LANE_EFFECT,
-        StandardText.SLOT_EFFECT,
-        StandardText.SLOT_EFFECT_SIZE,
-        StandardText.STAGE_COVER_VERTICAL,
-        StandardText.HIDDEN,
-        StandardText.STAGE_ASPECTRATIO_LOCK,
-        "Hide UI",
-        StandardText.STAGE,
-        "Slide Quality",
-        "Guide Quality",
-        "Note Margin",
-        "Alternative Approach Curve",
-        "Disable Timescale",
     )

@@ -67,12 +67,6 @@ active_connector_kind_mapping = {
     "CriticalSlideConnector": ConnectorKind.ACTIVE_CRITICAL,
 }
 
-flick_direction_mapping = {
-    -1: FlickDirection.UP_LEFT,
-    0: FlickDirection.UP_OMNI,
-    1: FlickDirection.UP_RIGHT,
-}
-
 ease_type_mapping = {
     -2: EaseType.OUT_IN_QUAD,
     -1: EaseType.OUT_QUAD,
@@ -217,7 +211,7 @@ def convert_notes(
             beat=entity.data["#BEAT"],
             lane=entity.data.get("lane", 0.0),
             size=entity.data.get("size", 0.0),
-            direction=flick_direction_mapping[entity.data.get("direction", 0)],
+            direction=FlickDirection.UP_OMNI,
             segment_kind=ConnectorKind.ACTIVE_NORMAL,
         )
         entities.append(note)

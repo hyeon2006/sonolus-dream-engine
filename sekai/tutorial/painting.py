@@ -84,12 +84,9 @@ def paint_flick_motion(
 
 
 def paint_tap_flick_motion(
-    from_pos: Vec2, angle: float, progress: float, tap_duration: float, flick_duration: float, offset: bool = False
+    from_pos: Vec2, angle: float, progress: float, tap_duration: float, flick_duration: float
 ):
     flick_start_progress = tap_duration / (tap_duration + flick_duration)
-    from_pos = +from_pos
-    if offset:
-        from_pos -= Vec2.unit(angle) * 0.3 * instruction_scale()
     if progress < flick_start_progress:
         paint_tap_motion(from_pos, remap(0, flick_start_progress, 0, 1, progress), fade_out=False)
     else:

@@ -62,13 +62,8 @@ Supported note archetypes:
 * **#TIMESCALE_GROUP (ref[#TIMESCALE_GROUP])**: The timescale group of the note.
 * **lane (float)**: The lane for the center of the note, centered at 0 with typical values from -5.5 to 5.5 (the edges of the stage are at lane -6 and 6).
 * **size (float)**: The size in lanes of *half* the note. E.g. a note of size 1 would take up two lanes and have an extent of (lane - size) to (lane + size). Typically ranges from 0.5 to 6.
-* **direction (Direction)**: The direction of the note, for flicks. Has no effect on other notes. Takes on one of the following values:
+* **direction (Direction)**: Flick direction. All flick angles are accepted, and legacy direction values are normalized to:
   * UP_OMNI = 0
-  * UP_LEFT = 1
-  * UP_RIGHT = 2
-  * DOWN_OMNI = 3
-  * DOWN_LEFT = 4
-  * DOWN_RIGHT = 5
 * **next (ref[Note])**: [Editor] A reference to the next note in the slide, if any.
 * **activeHead (ref?[Note])**: An optional reference to the starting note of the note's slide section.
 * **isAttached (bool)**: Whether this note's **lane, size**, and effective **timescale** should be calculated from **attachHead** and **attachTail**.

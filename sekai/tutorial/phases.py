@@ -4,7 +4,7 @@ from math import pi
 from sonolus.script.array import Array
 
 from sekai.lib.ease import EaseType, ease
-from sekai.lib.layout import FlickDirection, transformed_vec_at
+from sekai.lib.layout import transformed_vec_at
 from sekai.lib.note import NoteKind
 from sekai.tutorial.framework import PhaseTime, TutorialNoteInfo, zoom_for_intro
 from sekai.tutorial.instructions import Instructions
@@ -93,13 +93,11 @@ def omni_flick_phase(t: PhaseTime):
         kind=NoteKind.NORM_TAIL_FLICK,
         lane=-LANE,
         size=SIZE,
-        direction=FlickDirection.UP_OMNI,
     )
     crit_note = TutorialNoteInfo.of(
         kind=NoteKind.CRIT_TAIL_FLICK,
         lane=LANE,
         size=SIZE,
-        direction=FlickDirection.DOWN_OMNI,
     )
     if intro:
         zoom_for_intro()
@@ -118,122 +116,6 @@ def omni_flick_phase(t: PhaseTime):
         )
         paint_tap_flick_motion(
             transformed_vec_at(crit_note.lane), angle, frozen.progress, FROZEN_TAP_DURATION, FROZEN_FLICK_DURATION
-        )
-        Instructions.tap_flick.show()
-    if hit:
-        norm_note.play_hit_effects()
-        crit_note.play_hit_effects()
-    if post_hit:
-        norm_note.draw_slot_effects(post_hit)
-        crit_note.draw_slot_effects(post_hit)
-    if end:
-        pass
-    return end.is_done
-
-
-def up_flick_phase(t: PhaseTime):
-    intro = t.first(INTRO_DURATION)
-    fall = intro.next(FALL_DURATION)
-    frozen = fall.next(FROZEN_TAP_DURATION + FROZEN_FLICK_DURATION, repeats=FROZEN_REPEATS)
-    hit = t.instant(frozen.end - FROZEN_FLICK_DURATION)
-    end = frozen.next(END_DURATION)
-    post_hit = t.range(hit.timing, end.end)
-
-    norm_note = TutorialNoteInfo.of(
-        kind=NoteKind.NORM_TAIL_FLICK,
-        lane=-LANE,
-        size=SIZE,
-        direction=FlickDirection.UP_LEFT,
-    )
-    crit_note = TutorialNoteInfo.of(
-        kind=NoteKind.CRIT_TAIL_FLICK,
-        lane=LANE,
-        size=SIZE,
-        direction=FlickDirection.UP_RIGHT,
-    )
-    if intro:
-        zoom_for_intro()
-        norm_note.draw()
-        crit_note.draw()
-    if fall:
-        norm_note.draw(fall.progress)
-        crit_note.draw(fall.progress)
-    if frozen:
-        if hit.is_upcoming:
-            norm_note.draw()
-            crit_note.draw()
-        paint_tap_flick_motion(
-            transformed_vec_at(norm_note.lane),
-            ANGLE_UP_LEFT,
-            frozen.progress,
-            FROZEN_TAP_DURATION,
-            FROZEN_FLICK_DURATION,
-        )
-        paint_tap_flick_motion(
-            transformed_vec_at(crit_note.lane),
-            ANGLE_UP_RIGHT,
-            frozen.progress,
-            FROZEN_TAP_DURATION,
-            FROZEN_FLICK_DURATION,
-        )
-        Instructions.tap_flick.show()
-    if hit:
-        norm_note.play_hit_effects()
-        crit_note.play_hit_effects()
-    if post_hit:
-        norm_note.draw_slot_effects(post_hit)
-        crit_note.draw_slot_effects(post_hit)
-    if end:
-        pass
-    return end.is_done
-
-
-def down_flick_phase(t: PhaseTime):
-    intro = t.first(INTRO_DURATION)
-    fall = intro.next(FALL_DURATION)
-    frozen = fall.next(FROZEN_TAP_DURATION + FROZEN_FLICK_DURATION, repeats=FROZEN_REPEATS)
-    hit = t.instant(frozen.end - FROZEN_FLICK_DURATION)
-    end = frozen.next(END_DURATION)
-    post_hit = t.range(hit.timing, end.end)
-
-    norm_note = TutorialNoteInfo.of(
-        kind=NoteKind.NORM_TAIL_FLICK,
-        lane=-LANE,
-        size=SIZE,
-        direction=FlickDirection.DOWN_RIGHT,
-    )
-    crit_note = TutorialNoteInfo.of(
-        kind=NoteKind.CRIT_TAIL_FLICK,
-        lane=LANE,
-        size=SIZE,
-        direction=FlickDirection.DOWN_LEFT,
-    )
-    if intro:
-        zoom_for_intro()
-        norm_note.draw()
-        crit_note.draw()
-    if fall:
-        norm_note.draw(fall.progress)
-        crit_note.draw(fall.progress)
-    if frozen:
-        if hit.is_upcoming:
-            norm_note.draw()
-            crit_note.draw()
-        paint_tap_flick_motion(
-            transformed_vec_at(norm_note.lane),
-            ANGLE_DOWN_RIGHT,
-            frozen.progress,
-            FROZEN_TAP_DURATION,
-            FROZEN_FLICK_DURATION,
-            offset=True,
-        )
-        paint_tap_flick_motion(
-            transformed_vec_at(crit_note.lane),
-            ANGLE_DOWN_LEFT,
-            frozen.progress,
-            FROZEN_TAP_DURATION,
-            FROZEN_FLICK_DURATION,
-            offset=True,
         )
         Instructions.tap_flick.show()
     if hit:
@@ -301,13 +183,11 @@ def trace_flick_phase(t: PhaseTime):
         kind=NoteKind.NORM_TRACE_FLICK,
         lane=-LANE,
         size=SIZE,
-        direction=FlickDirection.UP_LEFT,
     )
     crit_note = TutorialNoteInfo.of(
         kind=NoteKind.CRIT_TRACE_FLICK,
         lane=LANE,
         size=SIZE,
-        direction=FlickDirection.UP_RIGHT,
     )
     if intro:
         zoom_for_intro()
@@ -558,14 +438,12 @@ def slide_tail_flick_phase(t: PhaseTime):
         kind=NoteKind.NORM_TAIL_FLICK,
         lane=-LANE,
         size=SIZE,
-        direction=FlickDirection.UP_LEFT,
         offset=0,
     )
     crit_tail = TutorialNoteInfo.of(
         kind=NoteKind.CRIT_TAIL_FLICK,
         lane=LANE,
         size=SIZE,
-        direction=FlickDirection.UP_RIGHT,
         offset=0,
     )
 
@@ -648,8 +526,6 @@ def damage_phase(t: PhaseTime):
 PHASES: tuple[Callable[[PhaseTime], bool], ...] = (
     tap_phase,
     omni_flick_phase,
-    up_flick_phase,
-    down_flick_phase,
     trace_phase,
     trace_flick_phase,
     slide_head_phase,

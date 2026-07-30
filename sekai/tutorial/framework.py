@@ -32,7 +32,7 @@ from sekai.lib.connector import (
     update_linear_connector_particle,
 )
 from sekai.lib.ease import EaseType, ease
-from sekai.lib.layout import IDENTITY_AFFINE_TRANSFORM, FlickDirection, transformed_vec_at
+from sekai.lib.layout import IDENTITY_AFFINE_TRANSFORM, transformed_vec_at
 from sekai.lib.note import (
     NoteKind,
     draw_note,
@@ -202,7 +202,6 @@ class TutorialNoteInfo(Record):
     kind: NoteKind
     lane: float
     size: float
-    direction: FlickDirection
     offset: float
 
     @classmethod
@@ -211,10 +210,9 @@ class TutorialNoteInfo(Record):
         kind: NoteKind,
         lane: float,
         size: float,
-        direction: FlickDirection = FlickDirection.UP_OMNI,
         offset: float = 0,
     ) -> Self:
-        return cls(kind=kind, lane=lane, size=size, direction=direction, offset=offset)  # type: ignore
+        return cls(kind=kind, lane=lane, size=size, offset=offset)  # type: ignore
 
     def draw(self, progress: float = 1):
         PhaseState.queued_note_draws.append(QueuedTutorialNoteDraw(note=self, progress=progress))
@@ -261,7 +259,6 @@ class QueuedTutorialNoteDraw(Record):
             lane=self.note.lane,
             size=self.note.size,
             visual_progress=self.progress + self.note.offset,
-            direction=self.note.direction,
             target_time=time() + 1 - self.progress - self.note.offset,
             transform=IDENTITY_AFFINE_TRANSFORM,
             note_alpha=1.0,
@@ -276,7 +273,6 @@ class QueuedTutorialNotePlayHitEffects(Record):
             kind=self.note.kind,
             lane=self.note.lane,
             size=self.note.size,
-            direction=self.note.direction,
             judgment=Judgment.PERFECT,
             transform=IDENTITY_AFFINE_TRANSFORM,
         )
@@ -292,7 +288,6 @@ class QueuedTutorialNoteDrawSlotEffects(Record):
             lane=self.note.lane,
             size=self.note.size,
             start_time=phase_time_to_time(self.end_range.start),
-            direction=self.note.direction,
         )
 
 

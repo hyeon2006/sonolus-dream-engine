@@ -445,8 +445,8 @@ export const uscToLevelData = (usc: USC, offset = 0): LevelData => {
 const flickDirections = {
     none: 0,
     up: 0,
-    left: 1,
-    right: 2,
+    left: 0,
+    right: 0,
 }
 
 const connectorEases = {

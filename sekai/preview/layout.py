@@ -1,6 +1,6 @@
 from collections.abc import Iterator
-from math import floor, pi
-from typing import Literal, assert_never
+from math import floor
+from typing import Literal
 
 from sonolus.script.array import Array, Dim
 from sonolus.script.containers import VarArray
@@ -11,7 +11,7 @@ from sonolus.script.quad import Quad, Rect
 from sonolus.script.runtime import HorizontalAlign, ScrollDirection, canvas, screen
 from sonolus.script.vec import Vec2
 
-from sekai.lib.layout import NOTE_EDGE_W, NOTE_SLIM_EDGE_W, FlickDirection
+from sekai.lib.layout import NOTE_EDGE_W, NOTE_SLIM_EDGE_W
 from sekai.lib.options import Options
 
 PREVIEW_COLUMN_SECS = 2
@@ -219,60 +219,21 @@ def layout_preview_tick(lane: float, col: int, y: float) -> Rect:
     return Rect.from_center(center, Vec2(PREVIEW_NOTE_H, PREVIEW_NOTE_H) * 2)
 
 
-def layout_preview_flick_arrow(lane: float, size: float, direction: FlickDirection, col: int, y: float) -> Rect:
-    match direction:
-        case FlickDirection.UP_OMNI:
-            reverse = False
-        case FlickDirection.DOWN_OMNI:
-            reverse = False
-        case FlickDirection.UP_LEFT:
-            reverse = False
-        case FlickDirection.UP_RIGHT:
-            reverse = True
-        case FlickDirection.DOWN_LEFT:
-            reverse = False
-        case FlickDirection.DOWN_RIGHT:
-            reverse = True
-        case _:
-            assert_never(direction)
+def layout_preview_flick_arrow(lane: float, size: float, col: int, y: float) -> Rect:
     w = clamp(size, 0, 3) / 2
-    result = Rect(
+    return Rect(
         l=lane_to_preview_x(lane - w, col),
         r=lane_to_preview_x(lane + w, col),
         b=y,
         t=y + 2 * w * PREVIEW_LANE_W,
     )
-    if reverse:
-        result.l, result.r = result.r, result.l
-    return result
 
 
-def layout_preview_flick_arrow_fallback(
-    lane: float, size: float, direction: FlickDirection, col: int, y: float
-) -> Quad:
-    match direction:
-        case FlickDirection.UP_OMNI:
-            rotation = 0
-        case FlickDirection.DOWN_OMNI:
-            rotation = pi
-        case FlickDirection.UP_LEFT:
-            rotation = pi / 6
-        case FlickDirection.UP_RIGHT:
-            rotation = -pi / 6
-        case FlickDirection.DOWN_LEFT:
-            rotation = pi * 5 / 6
-            lane -= 0.25  # Note: backwards from the regular skin due to how the sprites are designed
-        case FlickDirection.DOWN_RIGHT:
-            rotation = -pi * 5 / 6
-            lane += 0.25
-        case _:
-            assert_never(direction)
-
+def layout_preview_flick_arrow_fallback(lane: float, size: float, col: int, y: float) -> Quad:
     w = clamp(size / 2, 1, 2)
     return (
         Rect(l=-1, r=1, t=1, b=-1)
         .as_quad()
-        .rotate(rotation)
         .scale(Vec2(w, w) * PREVIEW_LANE_W)
         .translate(Vec2(lane_to_preview_x(lane, col), y + PREVIEW_NOTE_H / 2))
     )

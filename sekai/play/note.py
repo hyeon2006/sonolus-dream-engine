@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from math import pi
 from typing import assert_never, cast
 
 from sonolus.script.archetype import (
@@ -30,7 +29,6 @@ from sekai.lib.connector import ActiveConnectorInfo, ConnectorKind
 from sekai.lib.ease import EaseType, ease
 from sekai.lib.layout import (
     IDENTITY_AFFINE_TRANSFORM,
-    DynamicLayout,
     FlickDirection,
     Hitbox,
     Layout,
@@ -53,7 +51,6 @@ from sekai.lib.note import (
     hitbox_draw_start,
     is_head,
     map_note_kind,
-    mirror_flick_direction,
     play_note_hit_effects,
     schedule_note_auto_sfx,
 )
@@ -108,7 +105,6 @@ class BaseNote(PlayArchetype):
 
     # For trace early touches
     best_touch_time: float = entity_memory()
-    best_touch_matches_direction: bool = entity_memory()
 
     should_play_hit_effects: bool = entity_memory()
 
@@ -131,7 +127,6 @@ class BaseNote(PlayArchetype):
 
         if Options.mirror:
             self.lane *= -1
-            self.direction = mirror_flick_direction(self.direction)
 
         self.target_time = beat_to_time(self.beat)
         window = get_note_window(self.kind)
@@ -205,10 +200,7 @@ class BaseNote(PlayArchetype):
         update_timescale_group(self.timescale_group)
 
         if self.should_do_delayed_trigger():
-            if self.best_touch_matches_direction:
-                self.judge(self.best_touch_time)
-            else:
-                self.judge_wrong_way(self.best_touch_time)
+            self.judge(self.best_touch_time)
             return
         if (
             self.is_scored
@@ -270,7 +262,6 @@ class BaseNote(PlayArchetype):
             self.visual_lane,
             self.size,
             self.visual_progress,
-            self.direction,
             self.target_time,
             transform=IDENTITY_AFFINE_TRANSFORM,
             note_alpha=1.0,
@@ -298,14 +289,6 @@ class BaseNote(PlayArchetype):
         if self.best_touch_time == DEFAULT_BEST_TOUCH_TIME:
             return False
 
-        # Give until the end of the perfect window to give a right-way touch if we've only had wrong-way touches.
-        # After that, wrong-way has no impact anyway.
-        if (
-            not self.best_touch_matches_direction
-            and offset_adjusted_time() < self.target_time + self.judgment_window.perfect.end
-        ):
-            return False
-
         # If a new input could improve the judgment...
         if offset_adjusted_time() < self.target_time + (self.target_time - self.best_touch_time):
             # If we're still in the perfect window, wait for it to end.
@@ -326,7 +309,6 @@ class BaseNote(PlayArchetype):
                 self.kind,
                 self.visual_lane,
                 self.size,
-                self.direction,
                 self.result.judgment,
                 y_offset=0.0,
                 pivot_lane=0.0,
@@ -369,46 +351,32 @@ class BaseNote(PlayArchetype):
                 self.judge(offset_adjusted_time())
         else:
             self.best_touch_time = offset_adjusted_time()
-            self.best_touch_matches_direction = True
 
     def handle_trace_flick_input(self):
         if time() > self.input_interval.end:
             return
         if self.should_do_delayed_trigger():
             return
-        has_touch = False
-        has_correct_direction_touch = False
+        has_flick = False
         for touch in touches():
             if not self.check_touch_is_eligible_for_trace(touch):
                 continue
             input_manager.disallow_empty(touch)
             if not self.check_touch_is_eligible_for_trace_flick(touch):
                 continue
-            has_touch = True
-            if self.check_direction_matches(touch.angle):
-                has_correct_direction_touch = True
-        if not has_touch:
+            has_flick = True
+        if not has_flick:
             return
         if offset_adjusted_time() >= self.target_time:
-            if has_correct_direction_touch:
-                if offset_adjusted_time() - delta_time() <= self.target_time <= offset_adjusted_time():
-                    self.complete()
-                else:
-                    self.judge(offset_adjusted_time())
-                return
-            elif offset_adjusted_time() > self.target_time + self.judgment_window.perfect.end:
-                self.judge_wrong_way(offset_adjusted_time())
-                return
-        # Either pre-target, or post-target within perfect window with wrong direction
+            if offset_adjusted_time() - delta_time() <= self.target_time <= offset_adjusted_time():
+                self.complete()
+            else:
+                self.judge(offset_adjusted_time())
+            return
         current_abs_error = abs(self.best_touch_time - self.target_time)
-        if not self.best_touch_matches_direction:
-            current_abs_error = max(current_abs_error, self.judgment_window.perfect.end)
         incoming_abs_error = abs(offset_adjusted_time() - self.target_time)
-        if not has_correct_direction_touch:
-            incoming_abs_error = max(incoming_abs_error, self.judgment_window.perfect.end)
         if incoming_abs_error < current_abs_error:
             self.best_touch_time = offset_adjusted_time()
-            self.best_touch_matches_direction = has_correct_direction_touch
 
     def handle_tick_input(self):
         has_touch = False
@@ -423,7 +391,6 @@ class BaseNote(PlayArchetype):
             else:
                 # Always judge as perfect accuracy for ticks if touched.
                 self.best_touch_time = self.target_time
-                self.best_touch_matches_direction = True
 
     def handle_damage_input(self):
         has_touch = False
@@ -476,45 +443,11 @@ class BaseNote(PlayArchetype):
             )
         )
 
-    def check_direction_matches(self, angle: float) -> bool:
-        leniency = pi / 2
-        match self.direction:
-            case FlickDirection.UP_OMNI | FlickDirection.DOWN_OMNI:
-                return True
-            case FlickDirection.UP_LEFT:
-                target_angle = pi / 2 + 1
-            case FlickDirection.UP_RIGHT:
-                target_angle = pi / 2 - 1
-            case FlickDirection.DOWN_LEFT:
-                target_angle = -pi / 2 - 1
-            case FlickDirection.DOWN_RIGHT:
-                target_angle = -pi / 2 + 1
-            case _:
-                assert_never(self.direction)
-        angle_diff = abs((angle + DynamicLayout.rotate - target_angle + pi) % (2 * pi) - pi)
-        return angle_diff <= leniency
-
     def judge(self, actual_time: float):
         judgment = self.judgment_window.judge(actual_time, self.target_time)
         error = self.judgment_window.good.clamp(actual_time - self.target_time)
         self.result.judgment = judgment
         self.result.accuracy = error
-        if self.result.bucket.id != -1:
-            self.result.bucket_value = error * WINDOW_SCALE
-        self.despawn = True
-        self.should_play_hit_effects = judgment != Judgment.MISS
-        self.post_judge()
-
-    def judge_wrong_way(self, actual_time: float):
-        judgment = self.judgment_window.judge(actual_time, self.target_time)
-        if judgment == Judgment.PERFECT:
-            judgment = Judgment.GREAT
-        error = self.judgment_window.good.clamp(actual_time - self.target_time)
-        self.result.judgment = judgment
-        if error in self.judgment_window.perfect:
-            self.result.accuracy = self.judgment_window.perfect.end
-        else:
-            self.result.accuracy = error
         if self.result.bucket.id != -1:
             self.result.bucket_value = error * WINDOW_SCALE
         self.despawn = True

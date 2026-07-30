@@ -4,7 +4,6 @@ from typing import Literal, assert_never, cast
 
 from sonolus.script.archetype import EntityRef, HapticType, PlayArchetype, WatchArchetype, get_archetype_by_name
 from sonolus.script.bucket import Bucket, Judgment
-from sonolus.script.easing import ease_in_cubic
 from sonolus.script.effect import Effect
 from sonolus.script.interval import lerp, remap_clamped, unlerp_clamped
 from sonolus.script.quad import Quad
@@ -29,8 +28,6 @@ from sekai.lib.effect import EMPTY_EFFECT, SFX_DISTANCE, Effects, first_availabl
 from sekai.lib.layer import (
     LAYER_NOTE_ARROW,
     LAYER_NOTE_BODY,
-    LAYER_NOTE_FLICK_BODY,
-    LAYER_NOTE_SLIM_BODY,
     LAYER_NOTE_TICK,
     LAYER_OVERLAY,
     ZIndexes,
@@ -41,7 +38,6 @@ from sekai.lib.layout import (
     IDENTITY_AFFINE_TRANSFORM,
     AffineTransform2d,
     DynamicLayout,
-    FlickDirection,
     Hitbox,
     approach,
     get_alpha,
@@ -50,6 +46,7 @@ from sekai.lib.layout import (
     layout_flick_arrow,
     layout_flick_arrow_fallback,
     layout_linear_effect,
+    layout_note_icon,
     layout_particle_lane,
     layout_regular_note_body,
     layout_regular_note_body_fallback,
@@ -191,24 +188,6 @@ def map_note_kind(kind: NoteKind) -> NoteKind:
     return kind
 
 
-def mirror_flick_direction(direction: FlickDirection) -> FlickDirection:
-    match direction:
-        case FlickDirection.UP_OMNI:
-            return FlickDirection.UP_OMNI
-        case FlickDirection.DOWN_OMNI:
-            return FlickDirection.DOWN_OMNI
-        case FlickDirection.UP_LEFT:
-            return FlickDirection.UP_RIGHT
-        case FlickDirection.UP_RIGHT:
-            return FlickDirection.UP_LEFT
-        case FlickDirection.DOWN_LEFT:
-            return FlickDirection.DOWN_RIGHT
-        case FlickDirection.DOWN_RIGHT:
-            return FlickDirection.DOWN_LEFT
-        case _:
-            assert_never(direction)
-
-
 def get_visual_spawn_time(
     timescale_group: int | EntityRef,
     target_scaled_time: CompositeTime | float,
@@ -248,7 +227,6 @@ def draw_note(
     lane: float,
     size: float,
     visual_progress: float,
-    direction: FlickDirection,
     target_time: float,
     transform: AffineTransform2d,
     note_alpha: float,
@@ -258,10 +236,11 @@ def draw_note(
     if note_alpha <= 0:
         return
     travel = approach(visual_progress)
-    sprite_set = get_note_sprite_set(kind, direction)
+    sprite_set = get_note_sprite_set(kind)
     draw_note_body(sprite_set.body, kind, lane, size, travel, target_time, transform, note_alpha)
-    draw_note_arrow(sprite_set.arrow, kind, lane, size, travel, target_time, direction, transform, note_alpha)
+    draw_note_arrow(sprite_set.arrow, kind, lane, size, travel, target_time, transform, note_alpha)
     draw_note_tick(sprite_set.tick, lane, travel, target_time, transform, note_alpha)
+    draw_note_icon(kind, lane, travel, target_time, transform, note_alpha)
 
 
 def draw_slide_note_head(
@@ -289,9 +268,10 @@ def draw_slide_note_head(
         case _:
             assert_never(connector_kind)
     travel = approach(visual_progress)
-    sprite_set = get_note_sprite_set(kind, FlickDirection.UP_OMNI)
+    sprite_set = get_note_sprite_set(kind)
     draw_note_body(sprite_set.body, kind, lane, size, travel, target_time, transform, note_alpha)
     draw_note_tick(sprite_set.tick, lane, travel, target_time, transform, note_alpha)
+    draw_note_icon(kind, lane, travel, target_time, transform, note_alpha)
 
 
 def note_kind_as_normal(kind: NoteKind) -> NoteKind:
@@ -330,7 +310,7 @@ def note_kind_as_critical(kind: NoteKind) -> NoteKind:
             return kind
 
 
-def get_note_sprite_set(kind: NoteKind, direction: FlickDirection) -> NoteSpriteSet:
+def get_note_sprite_set(kind: NoteKind) -> NoteSpriteSet:
     result = +NoteSpriteSet
     match kind:
         case NoteKind.NORM_TAP:
@@ -338,29 +318,17 @@ def get_note_sprite_set(kind: NoteKind, direction: FlickDirection) -> NoteSprite
         case NoteKind.CRIT_TAP:
             result @= ActiveSkin.critical_note
         case NoteKind.NORM_TAIL_FLICK:
-            if direction in {FlickDirection.UP_OMNI, FlickDirection.UP_LEFT, FlickDirection.UP_RIGHT}:
-                result @= ActiveSkin.flick_note
-            else:
-                result @= ActiveSkin.down_flick_note
+            result @= ActiveSkin.flick_note
         case NoteKind.CRIT_TAIL_FLICK:
-            if direction in {FlickDirection.UP_OMNI, FlickDirection.UP_LEFT, FlickDirection.UP_RIGHT}:
-                result @= ActiveSkin.critical_flick_note
-            else:
-                result @= ActiveSkin.critical_down_flick_note
+            result @= ActiveSkin.critical_flick_note
         case NoteKind.NORM_TAIL_TRACE:
             result @= ActiveSkin.trace_note
         case NoteKind.CRIT_TAIL_TRACE:
             result @= ActiveSkin.critical_trace_note
         case NoteKind.NORM_TRACE_FLICK:
-            if direction in {FlickDirection.UP_OMNI, FlickDirection.UP_LEFT, FlickDirection.UP_RIGHT}:
-                result @= ActiveSkin.trace_flick_note
-            else:
-                result @= ActiveSkin.trace_down_flick_note
+            result @= ActiveSkin.trace_flick_note
         case NoteKind.CRIT_TRACE_FLICK:
-            if direction in {FlickDirection.UP_OMNI, FlickDirection.UP_LEFT, FlickDirection.UP_RIGHT}:
-                result @= ActiveSkin.critical_trace_flick_note
-            else:
-                result @= ActiveSkin.critical_trace_down_flick_note
+            result @= ActiveSkin.critical_trace_flick_note
         case NoteKind.NORM_HEAD_TAP:
             result @= ActiveSkin.slide_note
         case NoteKind.CRIT_HEAD_TAP:
@@ -378,20 +346,8 @@ def get_note_sprite_set(kind: NoteKind, direction: FlickDirection) -> NoteSprite
     return result
 
 
-def get_note_body_layer(kind: NoteKind) -> int:
-    match kind:
-        case NoteKind.NORM_TAIL_FLICK | NoteKind.CRIT_TAIL_FLICK:
-            return LAYER_NOTE_FLICK_BODY
-        case (
-            NoteKind.NORM_TRACE_FLICK
-            | NoteKind.CRIT_TRACE_FLICK
-            | NoteKind.NORM_TAIL_TRACE
-            | NoteKind.CRIT_TAIL_TRACE
-            | NoteKind.DAMAGE
-        ):
-            return LAYER_NOTE_SLIM_BODY
-        case _:
-            return LAYER_NOTE_BODY
+def get_note_body_layer(_kind: NoteKind) -> int:
+    return LAYER_NOTE_BODY
 
 
 def draw_note_body(
@@ -439,6 +395,37 @@ def draw_note_tick(
     sprite.draw(layout, z=z.tuple, a=a)
 
 
+def draw_note_icon(
+    kind: NoteKind,
+    lane: float,
+    travel: float,
+    target_time: float,
+    transform: AffineTransform2d,
+    note_alpha: float,
+):
+    match kind:
+        case (
+            NoteKind.NORM_TAP
+            | NoteKind.CRIT_TAP
+            | NoteKind.NORM_TRACE_FLICK
+            | NoteKind.CRIT_TRACE_FLICK
+            | NoteKind.NORM_HEAD_TAP
+            | NoteKind.CRIT_HEAD_TAP
+            | NoteKind.NORM_TAIL_FLICK
+            | NoteKind.CRIT_TAIL_FLICK
+            | NoteKind.NORM_TAIL_TRACE
+            | NoteKind.CRIT_TAIL_TRACE
+            | NoteKind.DAMAGE
+        ):
+            pass
+        case _:
+            return
+    a = min(get_alpha(target_time) * note_alpha, 1.0)
+    z = get_z(get_note_body_layer(kind), time=target_time, lane=lane, etc=1)
+    layout = transform.transform_quad(layout_note_icon(lane, travel))
+    ActiveSkin.note_icon.draw(layout, z=z.tuple, a=a)
+
+
 def draw_note_arrow(
     sprites: ArrowSpriteSet,
     kind: NoteKind,
@@ -446,35 +433,21 @@ def draw_note_arrow(
     size: float,
     travel: float,
     target_time: float,
-    direction: FlickDirection,
     transform: AffineTransform2d,
     note_alpha: float,
 ):
-    match direction:
-        case _ if Options.marker_animation:
-            period = 0.5
-            animation_progress = (time() / period) % 1
-        case FlickDirection.UP_LEFT | FlickDirection.UP_OMNI | FlickDirection.UP_RIGHT:
-            animation_progress = 0.2
-        case FlickDirection.DOWN_LEFT | FlickDirection.DOWN_OMNI | FlickDirection.DOWN_RIGHT:
-            animation_progress = 0.8
-        case _:
-            assert_never(direction)
-    animation_alpha = (1 - ease_in_cubic(animation_progress)) if Options.marker_animation else 1
-    a = min(get_alpha(target_time) * animation_alpha * note_alpha, 1.0)
-    z = get_z(LAYER_NOTE_ARROW, time=target_time, lane=lane, etc=direction + 6 * (not is_critical(kind)))
+    a = min(get_alpha(target_time) * note_alpha, 1.0)
+    z = get_z(LAYER_NOTE_ARROW, time=target_time, lane=lane, etc=not is_critical(kind))
     match sprites.render_type:
         case ArrowRenderType.NORMAL:
-            layout = transform.transform_quad(layout_flick_arrow(lane, size, direction, travel, animation_progress))
-            sprites.get_sprite(size, direction).draw(layout, z=z.tuple, a=a)
+            layout = transform.transform_quad(layout_flick_arrow(lane, size, travel))
+            sprites.get_sprite(size).draw(layout, z=z.tuple, a=a)
         case ArrowRenderType.FALLBACK:
-            layout = transform.transform_quad(
-                layout_flick_arrow_fallback(lane, size, direction, travel, animation_progress)
-            )
-            sprites.get_sprite(size, direction).draw(layout, z=z.tuple, a=a)
+            layout = transform.transform_quad(layout_flick_arrow_fallback(lane, size, travel))
+            sprites.get_sprite(size).draw(layout, z=z.tuple, a=a)
 
 
-def get_note_particles(kind: NoteKind, direction: FlickDirection) -> NoteParticleSet:
+def get_note_particles(kind: NoteKind) -> NoteParticleSet:
     result = +NoteParticleSet
     match kind:
         case NoteKind.NORM_TAP:
@@ -482,33 +455,21 @@ def get_note_particles(kind: NoteKind, direction: FlickDirection) -> NoteParticl
         case NoteKind.NORM_HEAD_TAP:
             result @= ActiveParticles.slide_note
         case NoteKind.NORM_TAIL_FLICK:
-            if direction in {FlickDirection.UP_OMNI, FlickDirection.UP_LEFT, FlickDirection.UP_RIGHT}:
-                result @= ActiveParticles.flick_note
-            else:
-                result @= ActiveParticles.down_flick_note
+            result @= ActiveParticles.flick_note
         case NoteKind.NORM_TAIL_TRACE:
             result @= ActiveParticles.trace_note
         case NoteKind.NORM_TRACE_FLICK:
-            if direction in {FlickDirection.UP_OMNI, FlickDirection.UP_LEFT, FlickDirection.UP_RIGHT}:
-                result @= ActiveParticles.trace_flick_note
-            else:
-                result @= ActiveParticles.trace_down_flick_note
+            result @= ActiveParticles.trace_flick_note
         case NoteKind.CRIT_TAP:
             result @= ActiveParticles.critical_note
         case NoteKind.CRIT_HEAD_TAP:
             result @= ActiveParticles.critical_slide_note
         case NoteKind.CRIT_TAIL_FLICK:
-            if direction in {FlickDirection.UP_OMNI, FlickDirection.UP_LEFT, FlickDirection.UP_RIGHT}:
-                result @= ActiveParticles.critical_flick_note
-            else:
-                result @= ActiveParticles.critical_down_flick_note
+            result @= ActiveParticles.critical_flick_note
         case NoteKind.CRIT_TAIL_TRACE:
             result @= ActiveParticles.critical_trace_note
         case NoteKind.CRIT_TRACE_FLICK:
-            if direction in {FlickDirection.UP_OMNI, FlickDirection.UP_LEFT, FlickDirection.UP_RIGHT}:
-                result @= ActiveParticles.critical_trace_flick_note
-            else:
-                result @= ActiveParticles.critical_trace_down_flick_note
+            result @= ActiveParticles.critical_trace_flick_note
         case NoteKind.NORM_TICK:
             result @= ActiveParticles.normal_slide_tick_note
         case NoteKind.CRIT_TICK:
@@ -595,7 +556,6 @@ def play_note_hit_effects(
     kind: NoteKind,
     lane: float,
     size: float,
-    direction: FlickDirection,
     judgment: Judgment,
     y_offset: float = 0.0,
     pivot_lane: float = 0.0,
@@ -613,7 +573,7 @@ def play_note_hit_effects(
         sfx.play(SFX_DISTANCE)
     if kind == NoteKind.DAMAGE and judgment == Judgment.PERFECT:
         return
-    particles = get_note_particles(kind, direction)
+    particles = get_note_particles(kind)
     if Options.note_effect_enabled:
         if particles.linear.is_available:
             layout = layout_linear_effect(lane, shear=0, y_offset=y_offset)
@@ -622,16 +582,7 @@ def play_note_hit_effects(
             layout = layout_circular_effect(lane, w=1.75, h=1.05, y_offset=y_offset)
             particles.circular.spawn(place(layout), duration=0.6 / Options.effect_animation_speed)
         if particles.directional.is_available:
-            match direction:
-                case FlickDirection.UP_OMNI | FlickDirection.DOWN_OMNI:
-                    shear = 0
-                case FlickDirection.UP_LEFT | FlickDirection.DOWN_RIGHT:
-                    shear = -1
-                case FlickDirection.UP_RIGHT | FlickDirection.DOWN_LEFT:
-                    shear = 1
-                case _:
-                    assert_never(direction)
-            layout = layout_rotated_linear_effect(lane, shear=shear, y_offset=y_offset)
+            layout = layout_rotated_linear_effect(lane, shear=0, y_offset=y_offset)
             particles.directional.spawn(place(layout), duration=0.32 / Options.effect_animation_speed)
         if particles.tick.is_available:
             layout = layout_tick_effect(lane, y_offset=y_offset)
@@ -653,7 +604,6 @@ def play_note_hit_effects(
             lane,
             size,
             time(),
-            direction,
             y_offset=y_offset,
             pivot_lane=pivot_lane,
             half_offset=half_offset,
@@ -699,7 +649,6 @@ def schedule_note_slot_effects(
     lane: float,
     size: float,
     target_time: float,
-    direction: FlickDirection,
     y_offset: float = 0.0,
     pivot_lane: float = 0.0,
     half_offset: bool = False,
@@ -711,7 +660,7 @@ def schedule_note_slot_effects(
         return
     if not Options.slot_effect_enabled:
         return
-    sprite_set = get_note_sprite_set(kind, direction)
+    sprite_set = get_note_sprite_set(kind)
     slot_sprite = sprite_set.slot
     if slot_sprite.is_available and not single_line:
         for slot_lane in iter_slot_lanes(lane, size, pivot_lane=pivot_lane, half_offset=half_offset):
@@ -735,12 +684,11 @@ def draw_tutorial_note_slot_effects(
     lane: float,
     size: float,
     start_time: float,
-    direction: FlickDirection,
     pivot_lane: float = 0.0,
     half_offset: bool = False,
     single_line: bool = False,
 ):
-    sprite_set = get_note_sprite_set(kind, direction)
+    sprite_set = get_note_sprite_set(kind)
     slot_sprite = sprite_set.slot
     if (
         slot_sprite.is_available

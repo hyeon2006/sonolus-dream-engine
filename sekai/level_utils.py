@@ -171,7 +171,7 @@ def build_level(
             "beat": level_note.beat,
             "lane": level_note.lane,
             "size": level_note.size,
-            "direction": level_note.direction,
+            "direction": FlickDirection.UP_OMNI,
             "connector_ease": level_note.connector_ease,
             "segment_kind": level_note.segment_kind,
             "segment_red": level_note.segment_red,

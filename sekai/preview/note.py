@@ -22,10 +22,9 @@ from sekai.lib.note import (
     get_note_sprite_set,
     is_critical,
     map_note_kind,
-    mirror_flick_direction,
 )
 from sekai.lib.options import Options
-from sekai.lib.skin import ArrowRenderType, ArrowSpriteSet, BodyRenderType, BodySpriteSet
+from sekai.lib.skin import ActiveSkin, ArrowRenderType, ArrowSpriteSet, BodyRenderType, BodySpriteSet
 from sekai.play.note import derive_note_archetypes
 from sekai.preview.layout import (
     PreviewData,
@@ -74,7 +73,6 @@ class PreviewBaseNote(PreviewArchetype):
 
         if Options.mirror:
             self.lane *= -1
-            self.direction = mirror_flick_direction(self.direction)
 
         self.target_time = beat_to_time(self.beat)
 
@@ -115,7 +113,7 @@ class PreviewBaseNote(PreviewArchetype):
             return
         if not self.is_scored:
             return
-        draw_note(self.kind, self.lane, self.size, self.direction, self.target_time)
+        draw_note(self.kind, self.lane, self.size, self.target_time)
 
     @property
     def head_ease_frac(self) -> float:
@@ -149,13 +147,14 @@ class PreviewBaseNote(PreviewArchetype):
         return self._basic_visual_lane_at(t)
 
 
-def draw_note(kind: NoteKind, lane: float, size: float, direction: FlickDirection, target_time: float):
+def draw_note(kind: NoteKind, lane: float, size: float, target_time: float):
     col = time_to_preview_col(target_time)
     y = time_to_preview_y(target_time, col)
-    sprite_set = get_note_sprite_set(kind, direction)
+    sprite_set = get_note_sprite_set(kind)
     draw_note_body(sprite_set.body, kind, lane, size, target_time, col, y)
-    draw_note_arrow(sprite_set.arrow, kind, lane, size, target_time, direction, col, y)
+    draw_note_arrow(sprite_set.arrow, kind, lane, size, target_time, col, y)
     draw_note_tick(sprite_set.tick, lane, target_time, col, y)
+    draw_note_icon(kind, lane, target_time, col, y)
 
 
 def draw_note_body(
@@ -188,7 +187,6 @@ def draw_note_arrow(
     lane: float,
     size: float,
     target_time: float,
-    direction: FlickDirection,
     col: int,
     y: float,
 ):
@@ -196,21 +194,29 @@ def draw_note_arrow(
         LAYER_NOTE_ARROW,
         time=get_adjusted_time(target_time, col),
         lane=lane,
-        etc=direction + 6 * (not is_critical(kind)),
+        etc=not is_critical(kind),
     )
     match sprites.render_type:
         case ArrowRenderType.NORMAL:
-            layout = layout_preview_flick_arrow(lane, size, direction, col, y)
-            sprites.get_sprite(size, direction).draw(layout, z=z.tuple)
+            layout = layout_preview_flick_arrow(lane, size, col, y)
+            sprites.get_sprite(size).draw(layout, z=z.tuple)
         case ArrowRenderType.FALLBACK:
-            layout = layout_preview_flick_arrow_fallback(lane, size, direction, col, y)
-            sprites.get_sprite(size, direction).draw(layout, z=z.tuple)
+            layout = layout_preview_flick_arrow_fallback(lane, size, col, y)
+            sprites.get_sprite(size).draw(layout, z=z.tuple)
 
 
 def draw_note_tick(sprite: Sprite, lane: float, target_time: float, col: int, y: float):
     z = get_z(LAYER_NOTE_TICK, time=get_adjusted_time(target_time, col), lane=lane)
     layout = layout_preview_tick(lane, col, y)
     sprite.draw(layout, z=z.tuple)
+
+
+def draw_note_icon(kind: NoteKind, lane: float, target_time: float, col: int, y: float):
+    if kind in {NoteKind.NORM_TICK, NoteKind.CRIT_TICK, NoteKind.HIDE_TICK, NoteKind.ANCHOR}:
+        return
+    z = get_z(get_note_body_layer(kind), time=get_adjusted_time(target_time, col), lane=lane, etc=1)
+    layout = layout_preview_tick(lane, col, y)
+    ActiveSkin.note_icon.draw(layout, z=z.tuple)
 
 
 PREVIEW_NOTE_ARCHETYPES = derive_note_archetypes(PreviewBaseNote)

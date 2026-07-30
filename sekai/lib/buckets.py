@@ -103,20 +103,16 @@ class Buckets:
 
     normal_trace_flick: Bucket = bucket(
         sprites=create_bucket_sprites(
-            body=BaseSkin.trace_flick_note_basic,
+            body=BaseSkin.note_red_middle,
             body_fallback=BaseSkin.note_red_fallback,
-            tick=BaseSkin.trace_flick_note_tick,
-            tick_fallback=BaseSkin.trace_note_red_tick,
             arrow=BaseSkin.flick_arrow_red_fallback,
         ),
         unit=StandardText.MILLISECOND_UNIT,
     )
     critical_trace_flick: Bucket = bucket(
         sprites=create_bucket_sprites(
-            body=BaseSkin.critical_trace_flick_note_basic,
+            body=BaseSkin.note_yellow_middle,
             body_fallback=BaseSkin.note_yellow_fallback,
-            tick=BaseSkin.critical_trace_flick_note_tick,
-            tick_fallback=BaseSkin.trace_note_yellow_tick,
             arrow=BaseSkin.flick_arrow_yellow_fallback,
         ),
         unit=StandardText.MILLISECOND_UNIT,
@@ -171,11 +167,9 @@ class Buckets:
         sprites=create_bucket_sprites(
             connector=BaseSkin.normal_active_slide_connection_normal,
             connector_fallback=BaseSkin.active_slide_connection_green_fallback,
-            body=BaseSkin.normal_trace_note_basic,
+            body=BaseSkin.slide_note_basic,
             body_fallback=BaseSkin.note_green_fallback,
             body_pos="right",
-            tick=BaseSkin.normal_trace_note_tick,
-            tick_fallback=BaseSkin.trace_note_green_tick,
         ),
         unit=StandardText.MILLISECOND_UNIT,
     )
@@ -183,11 +177,9 @@ class Buckets:
         sprites=create_bucket_sprites(
             connector=BaseSkin.critical_active_slide_connection_normal,
             connector_fallback=BaseSkin.active_slide_connection_yellow_fallback,
-            body=BaseSkin.critical_trace_note_basic,
+            body=BaseSkin.critical_note_basic,
             body_fallback=BaseSkin.note_yellow_fallback,
             body_pos="right",
-            tick=BaseSkin.critical_trace_note_tick,
-            tick_fallback=BaseSkin.trace_note_yellow_tick,
         ),
         unit=StandardText.MILLISECOND_UNIT,
     )

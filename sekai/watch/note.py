@@ -40,7 +40,6 @@ from sekai.lib.note import (
     hitbox_draw_start,
     is_head,
     map_note_kind,
-    mirror_flick_direction,
     play_note_hit_effects,
     schedule_note_auto_sfx,
     schedule_note_sfx,
@@ -104,7 +103,6 @@ class WatchBaseNote(WatchArchetype):
 
         if Options.mirror:
             self.lane *= -1
-            self.direction = mirror_flick_direction(self.direction)
 
         self.target_time = beat_to_time(self.beat)
 
@@ -177,7 +175,6 @@ class WatchBaseNote(WatchArchetype):
             self.visual_lane_at(t),
             self.size,
             t,
-            self.direction,
             y_offset=0.0,
             pivot_lane=0.0,
             half_offset=False,
@@ -217,7 +214,6 @@ class WatchBaseNote(WatchArchetype):
             self.visual_lane,
             self.size,
             self.visual_progress,
-            self.direction,
             self.target_time,
             transform=IDENTITY_AFFINE_TRANSFORM,
             note_alpha=1.0,
@@ -246,7 +242,6 @@ class WatchBaseNote(WatchArchetype):
                 self.kind,
                 self.visual_lane,
                 self.size,
-                self.direction,
                 self.judgment,
                 y_offset=0.0,
                 pivot_lane=0.0,

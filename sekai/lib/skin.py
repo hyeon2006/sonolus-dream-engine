@@ -6,9 +6,15 @@ from typing import Self, assert_never
 from sonolus.script.globals import level_data
 from sonolus.script.interval import clamp
 from sonolus.script.record import Record
-from sonolus.script.sprite import RenderMode, Sprite, SpriteGroup, StandardSprite, skin, sprite, sprite_group
-
-from sekai.lib.layout import FlickDirection
+from sonolus.script.sprite import (
+    RenderMode,
+    Sprite,
+    SpriteGroup,
+    StandardSprite,
+    skin,
+    sprite,
+    sprite_group,
+)
 
 
 @skin
@@ -23,65 +29,11 @@ class BaseSkin:
     stage_left_border: StandardSprite.STAGE_LEFT_BORDER
     stage_right_border: StandardSprite.STAGE_RIGHT_BORDER
 
-    lane_background: Sprite = sprite("Sekai Lane Background")
-    lane_divider: Sprite = sprite("Sekai Lane Divider")
-    stage_border: Sprite = sprite("Sekai Stage Border")
-    lane_background_preview: Sprite = sprite("Sekai Lane Background Preview")
-    lane_divider_preview: Sprite = sprite("Sekai Lane Divider Preview")
-    stage_border_preview: Sprite = sprite("Sekai Stage Border Preview")
-    judgment_background: Sprite = sprite("Sekai Judgment Background")
-
-    judgment_background_neutral: Sprite = sprite("Sekai Judgment Background Neutral")
-    judgment_gradient_neutral: Sprite = sprite("Sekai Judgment Gradient Neutral")
-    judgment_edge_neutral: Sprite = sprite("Sekai Judgment Edge Neutral")
-    judgment_edge_left_neutral: Sprite = sprite("Sekai Judgment Edge Left Neutral")
-    judgment_center_neutral: Sprite = sprite("Sekai Judgment Center Neutral")
-
-    judgment_background_red: Sprite = sprite("Sekai Judgment Background Red")
-    judgment_gradient_red: Sprite = sprite("Sekai Judgment Gradient Red")
-    judgment_edge_red: Sprite = sprite("Sekai Judgment Edge Red")
-    judgment_edge_left_red: Sprite = sprite("Sekai Judgment Edge Left Red")
-    judgment_center_red: Sprite = sprite("Sekai Judgment Center Red")
-
-    judgment_background_green: Sprite = sprite("Sekai Judgment Background Green")
-    judgment_gradient_green: Sprite = sprite("Sekai Judgment Gradient Green")
-    judgment_edge_green: Sprite = sprite("Sekai Judgment Edge Green")
-    judgment_edge_left_green: Sprite = sprite("Sekai Judgment Edge Left Green")
-    judgment_center_green: Sprite = sprite("Sekai Judgment Center Green")
-
-    judgment_background_blue: Sprite = sprite("Sekai Judgment Background Blue")
-    judgment_gradient_blue: Sprite = sprite("Sekai Judgment Gradient Blue")
-    judgment_edge_blue: Sprite = sprite("Sekai Judgment Edge Blue")
-    judgment_edge_left_blue: Sprite = sprite("Sekai Judgment Edge Left Blue")
-    judgment_center_blue: Sprite = sprite("Sekai Judgment Center Blue")
-
-    judgment_background_yellow: Sprite = sprite("Sekai Judgment Background Yellow")
-    judgment_gradient_yellow: Sprite = sprite("Sekai Judgment Gradient Yellow")
-    judgment_edge_yellow: Sprite = sprite("Sekai Judgment Edge Yellow")
-    judgment_edge_left_yellow: Sprite = sprite("Sekai Judgment Edge Left Yellow")
-    judgment_center_yellow: Sprite = sprite("Sekai Judgment Center Yellow")
-
-    judgment_background_purple: Sprite = sprite("Sekai Judgment Background Purple")
-    judgment_gradient_purple: Sprite = sprite("Sekai Judgment Gradient Purple")
-    judgment_edge_purple: Sprite = sprite("Sekai Judgment Edge Purple")
-    judgment_edge_left_purple: Sprite = sprite("Sekai Judgment Edge Left Purple")
-    judgment_center_purple: Sprite = sprite("Sekai Judgment Center Purple")
-
-    judgment_background_cyan: Sprite = sprite("Sekai Judgment Background Cyan")
-    judgment_gradient_cyan: Sprite = sprite("Sekai Judgment Gradient Cyan")
-    judgment_edge_cyan: Sprite = sprite("Sekai Judgment Edge Cyan")
-    judgment_edge_left_cyan: Sprite = sprite("Sekai Judgment Edge Left Cyan")
-    judgment_center_cyan: Sprite = sprite("Sekai Judgment Center Cyan")
-
-    judgment_background_black: Sprite = sprite("Sekai Judgment Background Black")
-    judgment_gradient_black: Sprite = sprite("Sekai Judgment Gradient Black")
-    judgment_edge_black: Sprite = sprite("Sekai Judgment Edge Black")
-    judgment_edge_left_black: Sprite = sprite("Sekai Judgment Edge Left Black")
-    judgment_center_black: Sprite = sprite("Sekai Judgment Center Black")
-
     sekai_stage: Sprite = sprite("Sekai Stage")
 
     sim_line: StandardSprite.SIMULTANEOUS_CONNECTION_NEUTRAL
+
+    note_icon: Sprite = sprite("Holodori Note Icon")
 
     note_cyan_left: Sprite = sprite("Sekai Note Cyan Left")
     note_cyan_middle: Sprite = sprite("Sekai Note Cyan Middle")
@@ -118,10 +70,6 @@ class BaseSkin:
     flick_note_right: Sprite = sprite("Sekai Flick Note Right")
     flick_note_basic: Sprite = sprite("Sekai Flick Note Basic")
 
-    down_flick_note_left: Sprite = sprite("Sekai Down Flick Note Left")
-    down_flick_note_middle: Sprite = sprite("Sekai Down Flick Note Middle")
-    down_flick_note_right: Sprite = sprite("Sekai Down Flick Note Right")
-
     critical_note_left: Sprite = sprite("Sekai Critical Note Left")
     critical_note_middle: Sprite = sprite("Sekai Critical Note Middle")
     critical_note_right: Sprite = sprite("Sekai Critical Note Right")
@@ -136,10 +84,6 @@ class BaseSkin:
     critical_flick_note_middle: Sprite = sprite("Sekai Critical Flick Note Middle")
     critical_flick_note_right: Sprite = sprite("Sekai Critical Flick Note Right")
     critical_flick_note_basic: Sprite = sprite("Sekai Critical Flick Note Basic")
-
-    critical_down_flick_note_left: Sprite = sprite("Sekai Critical Down Flick Note Left")
-    critical_down_flick_note_middle: Sprite = sprite("Sekai Critical Down Flick Note Middle")
-    critical_down_flick_note_right: Sprite = sprite("Sekai Critical Down Flick Note Right")
 
     slide_tick_note_green: Sprite = sprite("Sekai Diamond Green")
     slide_tick_note_green_fallback: StandardSprite.NOTE_TICK_GREEN
@@ -175,11 +119,9 @@ class BaseSkin:
     slot_normal: Sprite = sprite("Sekai Slot Normal")
     slot_slide: Sprite = sprite("Sekai Slot Slide")
     slot_flick: Sprite = sprite("Sekai Slot Flick")
-    slot_down_flick: Sprite = sprite("Sekai Slot Down Flick")
     slot_critical: Sprite = sprite("Sekai Slot Critical")
     slot_critical_slide: Sprite = sprite("Sekai Slot Critical Slide")
     slot_critical_flick: Sprite = sprite("Sekai Slot Critical Flick")
-    slot_critical_down_flick: Sprite = sprite("Sekai Slot Critical Down Flick")
 
     slot_glow_cyan: Sprite = sprite("Sekai Slot Glow Cyan")
     slot_glow_green: Sprite = sprite("Sekai Slot Glow Green")
@@ -191,11 +133,9 @@ class BaseSkin:
     slot_glow_normal: Sprite = sprite("Sekai Slot Glow Normal")
     slot_glow_slide: Sprite = sprite("Sekai Slot Glow Slide")
     slot_glow_flick: Sprite = sprite("Sekai Slot Glow Flick")
-    slot_glow_down_flick: Sprite = sprite("Sekai Slot Glow Down Flick")
     slot_glow_critical: Sprite = sprite("Sekai Slot Glow Critical")
     slot_glow_critical_slide: Sprite = sprite("Sekai Slot Glow Critical Slide")
     slot_glow_critical_flick: Sprite = sprite("Sekai Slot Glow Critical Flick")
-    slot_glow_critical_down_flick: Sprite = sprite("Sekai Slot Glow Critical Down Flick")
 
     slide_connector_slot_glow_green: Sprite = sprite("Sekai Slot Glow Green Slider Hold")
     slide_connector_slot_glow_yellow: Sprite = sprite("Sekai Slot Glow Yellow Slider Hold")
@@ -204,92 +144,14 @@ class BaseSkin:
     critical_slide_connector_slot_glow: Sprite = sprite("Sekai Critical Slide Slot Glow")
 
     flick_arrow_red_up: SpriteGroup = sprite_group(f"Sekai Flick Arrow Red Up {i}" for i in range(1, 7))
-    flick_arrow_red_up_left: SpriteGroup = sprite_group(f"Sekai Flick Arrow Red Up Left {i}" for i in range(1, 7))
-    flick_arrow_red_down: SpriteGroup = sprite_group(f"Sekai Flick Arrow Red Down {i}" for i in range(1, 7))
-    flick_arrow_red_down_left: SpriteGroup = sprite_group(f"Sekai Flick Arrow Red Down Left {i}" for i in range(1, 7))
     flick_arrow_red_fallback: StandardSprite.DIRECTIONAL_MARKER_RED
 
     flick_arrow_yellow_up: SpriteGroup = sprite_group(f"Sekai Flick Arrow Yellow Up {i}" for i in range(1, 7))
-    flick_arrow_yellow_up_left: SpriteGroup = sprite_group(f"Sekai Flick Arrow Yellow Up Left {i}" for i in range(1, 7))
-    flick_arrow_yellow_down: SpriteGroup = sprite_group(f"Sekai Flick Arrow Yellow Down {i}" for i in range(1, 7))
-    flick_arrow_yellow_down_left: SpriteGroup = sprite_group(
-        f"Sekai Flick Arrow Yellow Down Left {i}" for i in range(1, 7)
-    )
     flick_arrow_yellow_fallback: StandardSprite.DIRECTIONAL_MARKER_YELLOW
 
     flick_arrow_up: SpriteGroup = sprite_group(f"Sekai Flick Arrow Up {i}" for i in range(1, 7))
-    flick_arrow_up_left: SpriteGroup = sprite_group(f"Sekai Flick Arrow Up Left {i}" for i in range(1, 7))
-    flick_arrow_down: SpriteGroup = sprite_group(f"Sekai Flick Arrow Down {i}" for i in range(1, 7))
-    flick_arrow_down_left: SpriteGroup = sprite_group(f"Sekai Flick Arrow Down Left {i}" for i in range(1, 7))
 
     critical_flick_arrow_up: SpriteGroup = sprite_group(f"Sekai Critical Flick Arrow Up {i}" for i in range(1, 7))
-    critical_flick_arrow_up_left: SpriteGroup = sprite_group(
-        f"Sekai Critical Flick Arrow Up Left {i}" for i in range(1, 7)
-    )
-    critical_flick_arrow_down: SpriteGroup = sprite_group(f"Sekai Critical Flick Arrow Down {i}" for i in range(1, 7))
-    critical_flick_arrow_down_left: SpriteGroup = sprite_group(
-        f"Sekai Critical Flick Arrow Down Left {i}" for i in range(1, 7)
-    )
-
-    trace_note_green_left: Sprite = sprite("Sekai Trace Note Green Left")
-    trace_note_green_middle: Sprite = sprite("Sekai Trace Note Green Middle")
-    trace_note_green_right: Sprite = sprite("Sekai Trace Note Green Right")
-    trace_note_green_fallback: StandardSprite.NOTE_HEAD_GREEN
-    trace_note_green_tick: Sprite = sprite("Sekai Trace Diamond Green")
-    trace_note_green_tick_fallback: StandardSprite.NOTE_TICK_GREEN
-
-    trace_note_red_left: Sprite = sprite("Sekai Trace Note Red Left")
-    trace_note_red_middle: Sprite = sprite("Sekai Trace Note Red Middle")
-    trace_note_red_right: Sprite = sprite("Sekai Trace Note Red Right")
-    trace_note_red_fallback: StandardSprite.NOTE_HEAD_RED
-    trace_note_red_tick: Sprite = sprite("Sekai Trace Diamond Red")
-    trace_note_red_tick_fallback: StandardSprite.NOTE_TICK_RED
-
-    trace_note_yellow_left: Sprite = sprite("Sekai Trace Note Yellow Left")
-    trace_note_yellow_middle: Sprite = sprite("Sekai Trace Note Yellow Middle")
-    trace_note_yellow_right: Sprite = sprite("Sekai Trace Note Yellow Right")
-    trace_note_yellow_fallback: StandardSprite.NOTE_HEAD_YELLOW
-    trace_note_yellow_tick: Sprite = sprite("Sekai Trace Diamond Yellow")
-    trace_note_yellow_tick_fallback: StandardSprite.NOTE_TICK_YELLOW
-
-    trace_note_purple_left: Sprite = sprite("Sekai Trace Note Purple Left")
-    trace_note_purple_middle: Sprite = sprite("Sekai Trace Note Purple Middle")
-    trace_note_purple_right: Sprite = sprite("Sekai Trace Note Purple Right")
-    trace_note_purple_fallback: StandardSprite.NOTE_HEAD_PURPLE
-
-    normal_trace_note_left: Sprite = sprite("Sekai Normal Trace Note Left")
-    normal_trace_note_middle: Sprite = sprite("Sekai Normal Trace Note Middle")
-    normal_trace_note_right: Sprite = sprite("Sekai Normal Trace Note Right")
-    normal_trace_note_tick: Sprite = sprite("Sekai Normal Trace Diamond")
-    normal_trace_note_basic: Sprite = sprite("Sekai Normal Trace Note Basic")
-
-    trace_flick_note_left: Sprite = sprite("Sekai Trace Flick Note Left")
-    trace_flick_note_middle: Sprite = sprite("Sekai Trace Flick Note Middle")
-    trace_flick_note_right: Sprite = sprite("Sekai Trace Flick Note Right")
-    trace_flick_note_tick: Sprite = sprite("Sekai Trace Flick Diamond")
-    trace_flick_note_basic: Sprite = sprite("Sekai Trace Flick Note Basic")
-
-    trace_down_flick_note_left: Sprite = sprite("Sekai Trace Down Flick Note Left")
-    trace_down_flick_note_middle: Sprite = sprite("Sekai Trace Down Flick Note Middle")
-    trace_down_flick_note_right: Sprite = sprite("Sekai Trace Down Flick Note Right")
-    trace_down_flick_note_tick: Sprite = sprite("Sekai Trace Down Flick Diamond")
-
-    critical_trace_note_left: Sprite = sprite("Sekai Critical Trace Note Left")
-    critical_trace_note_middle: Sprite = sprite("Sekai Critical Trace Note Middle")
-    critical_trace_note_right: Sprite = sprite("Sekai Critical Trace Note Right")
-    critical_trace_note_tick: Sprite = sprite("Sekai Critical Trace Diamond")
-    critical_trace_note_basic: Sprite = sprite("Sekai Critical Trace Note Basic")
-
-    critical_trace_flick_note_left: Sprite = sprite("Sekai Critical Trace Flick Note Left")
-    critical_trace_flick_note_middle: Sprite = sprite("Sekai Critical Trace Flick Note Middle")
-    critical_trace_flick_note_right: Sprite = sprite("Sekai Critical Trace Flick Note Right")
-    critical_trace_flick_note_tick: Sprite = sprite("Sekai Critical Trace Flick Diamond")
-    critical_trace_flick_note_basic: Sprite = sprite("Sekai Critical Trace Flick Note Basic")
-
-    critical_trace_down_flick_note_left: Sprite = sprite("Sekai Critical Trace Down Flick Note Left")
-    critical_trace_down_flick_note_middle: Sprite = sprite("Sekai Critical Trace Down Flick Note Middle")
-    critical_trace_down_flick_note_right: Sprite = sprite("Sekai Critical Trace Down Flick Note Right")
-    critical_trace_down_flick_note_tick: Sprite = sprite("Sekai Critical Trace Down Flick Diamond")
 
     damage_note_left: Sprite = sprite("Sekai Damage Note Left")
     damage_note_middle: Sprite = sprite("Sekai Damage Note Middle")
@@ -433,29 +295,16 @@ class ArrowRenderType(IntEnum):
 class ArrowSpriteSet(Record):
     render_type: ArrowRenderType
     up: SpriteGroup
-    up_left: SpriteGroup
-    down: SpriteGroup
-    down_left: SpriteGroup
 
     def _get_index_from_size(self, size: float) -> int:
         return int(clamp(round(size * 2), 1, 6)) - 1
 
-    def get_sprite(self, size: float, direction) -> Sprite:
+    def get_sprite(self, size: float) -> Sprite:
         result = +Sprite
         match self.render_type:
             case ArrowRenderType.NORMAL:
                 index = self._get_index_from_size(size)
-                match direction:
-                    case FlickDirection.UP_OMNI:
-                        result @= self.up[index]
-                    case FlickDirection.DOWN_OMNI:
-                        result @= self.down[index]
-                    case FlickDirection.UP_LEFT | FlickDirection.UP_RIGHT:
-                        result @= self.up_left[index]
-                    case FlickDirection.DOWN_LEFT | FlickDirection.DOWN_RIGHT:
-                        result @= self.down_left[index]
-                    case _:
-                        assert_never(direction)
+                result @= self.up[index]
             case ArrowRenderType.FALLBACK:
                 result @= self.up[0]
             case _:
@@ -467,13 +316,10 @@ class ArrowSpriteSet(Record):
         return self.up[0].is_available
 
     @classmethod
-    def of_normal(cls, up: SpriteGroup, up_left: SpriteGroup, down: SpriteGroup, down_left: SpriteGroup) -> Self:
+    def of_normal(cls, up: SpriteGroup) -> Self:
         return cls(
             render_type=ArrowRenderType.NORMAL,
             up=up,
-            up_left=up_left,
-            down=down,
-            down_left=down_left,
         )
 
     @classmethod
@@ -481,9 +327,6 @@ class ArrowSpriteSet(Record):
         return cls(
             render_type=ArrowRenderType.FALLBACK,
             up=SpriteGroup(fallback.id, 1),
-            up_left=EMPTY_SPRITE_GROUP,
-            down=EMPTY_SPRITE_GROUP,
-            down_left=EMPTY_SPRITE_GROUP,
         )
 
 
@@ -499,9 +342,6 @@ def first_available_arrow_sprite_set(*sets: ArrowSpriteSet) -> ArrowSpriteSet:
 EMPTY_ARROW_SPRITE_SET = ArrowSpriteSet(
     render_type=ArrowRenderType.FALLBACK,
     up=EMPTY_SPRITE_GROUP,
-    up_left=EMPTY_SPRITE_GROUP,
-    down=EMPTY_SPRITE_GROUP,
-    down_left=EMPTY_SPRITE_GROUP,
 )
 
 
@@ -621,11 +461,6 @@ flick_note_body_sprites = BodySpriteSet.of_normal(
     middle=BaseSkin.flick_note_middle,
     right=BaseSkin.flick_note_right,
 )
-down_flick_note_body_sprites = BodySpriteSet.of_normal(
-    left=BaseSkin.down_flick_note_left,
-    middle=BaseSkin.down_flick_note_middle,
-    right=BaseSkin.down_flick_note_right,
-)
 critical_note_body_sprites = BodySpriteSet.of_normal(
     left=BaseSkin.critical_note_left,
     middle=BaseSkin.critical_note_middle,
@@ -641,105 +476,25 @@ critical_flick_note_body_sprites = BodySpriteSet.of_normal(
     middle=BaseSkin.critical_flick_note_middle,
     right=BaseSkin.critical_flick_note_right,
 )
-critical_down_flick_note_body_sprites = BodySpriteSet.of_normal(
-    left=BaseSkin.critical_down_flick_note_left,
-    middle=BaseSkin.critical_down_flick_note_middle,
-    right=BaseSkin.critical_down_flick_note_right,
-)
-
 flick_arrow_red_sprites = ArrowSpriteSet.of_normal(
     up=BaseSkin.flick_arrow_red_up,
-    up_left=BaseSkin.flick_arrow_red_up_left,
-    down=BaseSkin.flick_arrow_red_down,
-    down_left=BaseSkin.flick_arrow_red_down_left,
 )
 flick_arrow_red_fallback_sprites = ArrowSpriteSet.of_fallback(
     fallback=BaseSkin.flick_arrow_red_fallback,
 )
 flick_arrow_yellow_sprites = ArrowSpriteSet.of_normal(
     up=BaseSkin.flick_arrow_yellow_up,
-    up_left=BaseSkin.flick_arrow_yellow_up_left,
-    down=BaseSkin.flick_arrow_yellow_down,
-    down_left=BaseSkin.flick_arrow_yellow_down_left,
 )
 flick_arrow_yellow_fallback_sprites = ArrowSpriteSet.of_fallback(
     fallback=BaseSkin.flick_arrow_yellow_fallback,
 )
 flick_arrow_sprites = ArrowSpriteSet.of_normal(
     up=BaseSkin.flick_arrow_up,
-    up_left=BaseSkin.flick_arrow_up_left,
-    down=BaseSkin.flick_arrow_down,
-    down_left=BaseSkin.flick_arrow_down_left,
 )
 critical_flick_arrow_sprites = ArrowSpriteSet.of_normal(
     up=BaseSkin.critical_flick_arrow_up,
-    up_left=BaseSkin.critical_flick_arrow_up_left,
-    down=BaseSkin.critical_flick_arrow_down,
-    down_left=BaseSkin.critical_flick_arrow_down_left,
 )
 
-trace_note_green_body_sprites = BodySpriteSet.of_slim(
-    left=BaseSkin.trace_note_green_left,
-    middle=BaseSkin.trace_note_green_middle,
-    right=BaseSkin.trace_note_green_right,
-)
-trace_note_green_fallback_body_sprites = BodySpriteSet.of_slim_fallback(
-    fallback=BaseSkin.trace_note_green_fallback,
-)
-trace_note_red_body_sprites = BodySpriteSet.of_slim(
-    left=BaseSkin.trace_note_red_left,
-    middle=BaseSkin.trace_note_red_middle,
-    right=BaseSkin.trace_note_red_right,
-)
-trace_note_red_fallback_body_sprites = BodySpriteSet.of_slim_fallback(
-    fallback=BaseSkin.trace_note_red_fallback,
-)
-trace_note_yellow_body_sprites = BodySpriteSet.of_slim(
-    left=BaseSkin.trace_note_yellow_left,
-    middle=BaseSkin.trace_note_yellow_middle,
-    right=BaseSkin.trace_note_yellow_right,
-)
-trace_note_yellow_fallback_body_sprites = BodySpriteSet.of_slim_fallback(
-    fallback=BaseSkin.trace_note_yellow_fallback,
-)
-trace_note_purple_body_sprites = BodySpriteSet.of_slim(
-    left=BaseSkin.trace_note_purple_left,
-    middle=BaseSkin.trace_note_purple_middle,
-    right=BaseSkin.trace_note_purple_right,
-)
-trace_note_purple_fallback_body_sprites = BodySpriteSet.of_slim_fallback(
-    fallback=BaseSkin.trace_note_purple_fallback,
-)
-normal_trace_note_body_sprites = BodySpriteSet.of_slim(
-    left=BaseSkin.normal_trace_note_left,
-    middle=BaseSkin.normal_trace_note_middle,
-    right=BaseSkin.normal_trace_note_right,
-)
-trace_flick_note_body_sprites = BodySpriteSet.of_slim(
-    left=BaseSkin.trace_flick_note_left,
-    middle=BaseSkin.trace_flick_note_middle,
-    right=BaseSkin.trace_flick_note_right,
-)
-trace_down_flick_note_body_sprites = BodySpriteSet.of_slim(
-    left=BaseSkin.trace_down_flick_note_left,
-    middle=BaseSkin.trace_down_flick_note_middle,
-    right=BaseSkin.trace_down_flick_note_right,
-)
-critical_trace_note_body_sprites = BodySpriteSet.of_slim(
-    left=BaseSkin.critical_trace_note_left,
-    middle=BaseSkin.critical_trace_note_middle,
-    right=BaseSkin.critical_trace_note_right,
-)
-critical_trace_flick_note_body_sprites = BodySpriteSet.of_slim(
-    left=BaseSkin.critical_trace_flick_note_left,
-    middle=BaseSkin.critical_trace_flick_note_middle,
-    right=BaseSkin.critical_trace_flick_note_right,
-)
-critical_trace_down_flick_note_body_sprites = BodySpriteSet.of_slim(
-    left=BaseSkin.critical_trace_down_flick_note_left,
-    middle=BaseSkin.critical_trace_down_flick_note_middle,
-    right=BaseSkin.critical_trace_down_flick_note_right,
-)
 damage_note_body_sprites = BodySpriteSet.of_normal(
     left=BaseSkin.damage_note_left,
     middle=BaseSkin.damage_note_middle,
@@ -799,20 +554,18 @@ class ActiveSkin:
 
     sim_line: Sprite
 
+    note_icon: Sprite
+
     normal_note: NoteSpriteSet
     slide_note: NoteSpriteSet
     flick_note: NoteSpriteSet
-    down_flick_note: NoteSpriteSet
     critical_note: NoteSpriteSet
     critical_slide_note: NoteSpriteSet
     critical_flick_note: NoteSpriteSet
-    critical_down_flick_note: NoteSpriteSet
     trace_note: NoteSpriteSet
     trace_flick_note: NoteSpriteSet
-    trace_down_flick_note: NoteSpriteSet
     critical_trace_note: NoteSpriteSet
     critical_trace_flick_note: NoteSpriteSet
-    critical_trace_down_flick_note: NoteSpriteSet
     normal_slide_tick_note: NoteSpriteSet
     critical_slide_tick_note: NoteSpriteSet
     damage_note: NoteSpriteSet
@@ -846,121 +599,11 @@ def init_skin():
     ActiveSkin.stage_left_border = BaseSkin.stage_left_border
     ActiveSkin.stage_right_border = BaseSkin.stage_right_border
 
-    ActiveSkin.lane_background = BaseSkin.lane_background
-    ActiveSkin.lane_divider = BaseSkin.lane_divider
-    ActiveSkin.stage_border = BaseSkin.stage_border
-    ActiveSkin.lane_background_preview = BaseSkin.lane_background_preview
-    ActiveSkin.lane_divider_preview = BaseSkin.lane_divider_preview
-    ActiveSkin.stage_border_preview = BaseSkin.stage_border_preview
-
-    ActiveSkin.judgment_neutral = JudgmentSpriteSet(
-        judgment_background=first_available_sprite(
-            BaseSkin.judgment_background_neutral,
-            BaseSkin.judgment_background,
-        ),
-        judgment_gradient=BaseSkin.judgment_gradient_neutral,
-        judgment_edge=BaseSkin.judgment_edge_neutral,
-        judgment_edge_left=first_available_sprite(
-            BaseSkin.judgment_edge_left_neutral,
-            BaseSkin.judgment_edge_neutral,
-        ),
-        judgment_center=BaseSkin.judgment_center_neutral,
-    )
-    ActiveSkin.judgment_red = JudgmentSpriteSet(
-        judgment_background=first_available_sprite(
-            BaseSkin.judgment_background_red,
-            BaseSkin.judgment_background,
-        ),
-        judgment_gradient=BaseSkin.judgment_gradient_red,
-        judgment_edge=BaseSkin.judgment_edge_red,
-        judgment_edge_left=first_available_sprite(
-            BaseSkin.judgment_edge_left_red,
-            BaseSkin.judgment_edge_red,
-        ),
-        judgment_center=BaseSkin.judgment_center_red,
-    )
-    ActiveSkin.judgment_green = JudgmentSpriteSet(
-        judgment_background=first_available_sprite(
-            BaseSkin.judgment_background_green,
-            BaseSkin.judgment_background,
-        ),
-        judgment_gradient=BaseSkin.judgment_gradient_green,
-        judgment_edge=BaseSkin.judgment_edge_green,
-        judgment_edge_left=first_available_sprite(
-            BaseSkin.judgment_edge_left_green,
-            BaseSkin.judgment_edge_green,
-        ),
-        judgment_center=BaseSkin.judgment_center_green,
-    )
-    ActiveSkin.judgment_blue = JudgmentSpriteSet(
-        judgment_background=first_available_sprite(
-            BaseSkin.judgment_background_blue,
-            BaseSkin.judgment_background,
-        ),
-        judgment_gradient=BaseSkin.judgment_gradient_blue,
-        judgment_edge=BaseSkin.judgment_edge_blue,
-        judgment_edge_left=first_available_sprite(
-            BaseSkin.judgment_edge_left_blue,
-            BaseSkin.judgment_edge_blue,
-        ),
-        judgment_center=BaseSkin.judgment_center_blue,
-    )
-    ActiveSkin.judgment_yellow = JudgmentSpriteSet(
-        judgment_background=first_available_sprite(
-            BaseSkin.judgment_background_yellow,
-            BaseSkin.judgment_background,
-        ),
-        judgment_gradient=BaseSkin.judgment_gradient_yellow,
-        judgment_edge=BaseSkin.judgment_edge_yellow,
-        judgment_edge_left=first_available_sprite(
-            BaseSkin.judgment_edge_left_yellow,
-            BaseSkin.judgment_edge_yellow,
-        ),
-        judgment_center=BaseSkin.judgment_center_yellow,
-    )
-    ActiveSkin.judgment_purple = JudgmentSpriteSet(
-        judgment_background=first_available_sprite(
-            BaseSkin.judgment_background_purple,
-            BaseSkin.judgment_background,
-        ),
-        judgment_gradient=BaseSkin.judgment_gradient_purple,
-        judgment_edge=BaseSkin.judgment_edge_purple,
-        judgment_edge_left=first_available_sprite(
-            BaseSkin.judgment_edge_left_purple,
-            BaseSkin.judgment_edge_purple,
-        ),
-        judgment_center=BaseSkin.judgment_center_purple,
-    )
-    ActiveSkin.judgment_cyan = JudgmentSpriteSet(
-        judgment_background=first_available_sprite(
-            BaseSkin.judgment_background_cyan,
-            BaseSkin.judgment_background,
-        ),
-        judgment_gradient=BaseSkin.judgment_gradient_cyan,
-        judgment_edge=BaseSkin.judgment_edge_cyan,
-        judgment_edge_left=first_available_sprite(
-            BaseSkin.judgment_edge_left_cyan,
-            BaseSkin.judgment_edge_cyan,
-        ),
-        judgment_center=BaseSkin.judgment_center_cyan,
-    )
-    ActiveSkin.judgment_black = JudgmentSpriteSet(
-        judgment_background=first_available_sprite(
-            BaseSkin.judgment_background_black,
-            BaseSkin.judgment_background,
-        ),
-        judgment_gradient=BaseSkin.judgment_gradient_black,
-        judgment_edge=BaseSkin.judgment_edge_black,
-        judgment_edge_left=first_available_sprite(
-            BaseSkin.judgment_edge_left_black,
-            BaseSkin.judgment_edge_black,
-        ),
-        judgment_center=BaseSkin.judgment_center_black,
-    )
-
     ActiveSkin.sekai_stage = BaseSkin.sekai_stage
 
     ActiveSkin.sim_line = BaseSkin.sim_line
+
+    ActiveSkin.note_icon = BaseSkin.note_icon
 
     ActiveSkin.normal_note = NoteSpriteSet(
         body=first_available_body_sprite_set(
@@ -1013,30 +656,6 @@ def init_skin():
             BaseSkin.slot_red,
         ),
         slot_glow=first_available_sprite(
-            BaseSkin.slot_glow_flick,
-            BaseSkin.slot_glow_red,
-        ),
-    )
-    ActiveSkin.down_flick_note = NoteSpriteSet(
-        body=first_available_body_sprite_set(
-            down_flick_note_body_sprites,
-            flick_note_body_sprites,
-            note_red_body_sprites,
-            note_red_fallback_body_sprites,
-        ),
-        arrow=first_available_arrow_sprite_set(
-            flick_arrow_sprites,
-            flick_arrow_red_sprites,
-            flick_arrow_red_fallback_sprites,
-        ),
-        tick=EMPTY_SPRITE,
-        slot=first_available_sprite(
-            BaseSkin.slot_down_flick,
-            BaseSkin.slot_flick,
-            BaseSkin.slot_red,
-        ),
-        slot_glow=first_available_sprite(
-            BaseSkin.slot_glow_down_flick,
             BaseSkin.slot_glow_flick,
             BaseSkin.slot_glow_red,
         ),
@@ -1106,11 +725,45 @@ def init_skin():
             BaseSkin.slot_glow_yellow,
         ),
     )
-    ActiveSkin.critical_down_flick_note = NoteSpriteSet(
+    ActiveSkin.trace_note = NoteSpriteSet(
         body=first_available_body_sprite_set(
-            critical_down_flick_note_body_sprites,
-            critical_flick_note_body_sprites,
+            slide_note_body_sprites,
+            note_green_body_sprites,
+            note_green_fallback_body_sprites,
+        ),
+        arrow=EMPTY_ARROW_SPRITE_SET,
+        tick=EMPTY_SPRITE,
+        slot=EMPTY_SPRITE,
+        slot_glow=EMPTY_SPRITE,
+    )
+    ActiveSkin.trace_flick_note = NoteSpriteSet(
+        body=first_available_body_sprite_set(
+            note_red_body_sprites,
+            note_red_fallback_body_sprites,
+        ),
+        arrow=first_available_arrow_sprite_set(
+            flick_arrow_sprites,
+            flick_arrow_red_sprites,
+            flick_arrow_red_fallback_sprites,
+        ),
+        tick=EMPTY_SPRITE,
+        slot=EMPTY_SPRITE,
+        slot_glow=EMPTY_SPRITE,
+    )
+    ActiveSkin.critical_trace_note = NoteSpriteSet(
+        body=first_available_body_sprite_set(
+            critical_slide_note_body_sprites,
             critical_note_body_sprites,
+            note_yellow_body_sprites,
+            note_yellow_fallback_body_sprites,
+        ),
+        arrow=EMPTY_ARROW_SPRITE_SET,
+        tick=EMPTY_SPRITE,
+        slot=EMPTY_SPRITE,
+        slot_glow=EMPTY_SPRITE,
+    )
+    ActiveSkin.critical_trace_flick_note = NoteSpriteSet(
+        body=first_available_body_sprite_set(
             note_yellow_body_sprites,
             note_yellow_fallback_body_sprites,
         ),
@@ -1120,132 +773,6 @@ def init_skin():
             flick_arrow_yellow_fallback_sprites,
         ),
         tick=EMPTY_SPRITE,
-        slot=first_available_sprite(
-            BaseSkin.slot_critical_down_flick,
-            BaseSkin.slot_critical_flick,
-            BaseSkin.slot_yellow_flick,
-            BaseSkin.slot_critical,
-            BaseSkin.slot_yellow,
-        ),
-        slot_glow=first_available_sprite(
-            BaseSkin.slot_glow_critical_down_flick,
-            BaseSkin.slot_glow_critical_flick,
-            BaseSkin.slot_glow_yellow_flick,
-            BaseSkin.slot_glow_critical,
-            BaseSkin.slot_glow_yellow,
-        ),
-    )
-    ActiveSkin.trace_note = NoteSpriteSet(
-        body=first_available_body_sprite_set(
-            normal_trace_note_body_sprites,
-            trace_note_green_body_sprites,
-            trace_note_green_fallback_body_sprites,
-        ),
-        arrow=EMPTY_ARROW_SPRITE_SET,
-        tick=first_available_sprite(
-            BaseSkin.normal_trace_note_tick,
-            BaseSkin.trace_note_green_tick,
-            BaseSkin.trace_note_green_tick_fallback,
-        ),
-        slot=EMPTY_SPRITE,
-        slot_glow=EMPTY_SPRITE,
-    )
-    ActiveSkin.trace_flick_note = NoteSpriteSet(
-        body=first_available_body_sprite_set(
-            trace_flick_note_body_sprites,
-            trace_note_red_body_sprites,
-            trace_note_red_fallback_body_sprites,
-        ),
-        arrow=first_available_arrow_sprite_set(
-            flick_arrow_sprites,
-            flick_arrow_red_sprites,
-            flick_arrow_red_fallback_sprites,
-        ),
-        tick=first_available_sprite(
-            BaseSkin.trace_flick_note_tick,
-            BaseSkin.trace_note_red_tick,
-            BaseSkin.trace_note_red_tick_fallback,
-        ),
-        slot=EMPTY_SPRITE,
-        slot_glow=EMPTY_SPRITE,
-    )
-    ActiveSkin.trace_down_flick_note = NoteSpriteSet(
-        body=first_available_body_sprite_set(
-            trace_down_flick_note_body_sprites,
-            trace_flick_note_body_sprites,
-            trace_note_red_body_sprites,
-            trace_note_red_fallback_body_sprites,
-        ),
-        arrow=first_available_arrow_sprite_set(
-            flick_arrow_sprites,
-            flick_arrow_red_sprites,
-            flick_arrow_red_fallback_sprites,
-        ),
-        tick=first_available_sprite(
-            BaseSkin.trace_down_flick_note_tick,
-            BaseSkin.trace_flick_note_tick,
-            BaseSkin.trace_note_red_tick,
-            BaseSkin.trace_note_red_tick_fallback,
-        ),
-        slot=EMPTY_SPRITE,
-        slot_glow=EMPTY_SPRITE,
-    )
-    ActiveSkin.critical_trace_note = NoteSpriteSet(
-        body=first_available_body_sprite_set(
-            critical_trace_note_body_sprites,
-            trace_note_yellow_body_sprites,
-            trace_note_yellow_fallback_body_sprites,
-        ),
-        arrow=EMPTY_ARROW_SPRITE_SET,
-        tick=first_available_sprite(
-            BaseSkin.critical_trace_note_tick,
-            BaseSkin.trace_note_yellow_tick,
-            BaseSkin.trace_note_yellow_tick_fallback,
-        ),
-        slot=EMPTY_SPRITE,
-        slot_glow=EMPTY_SPRITE,
-    )
-    ActiveSkin.critical_trace_flick_note = NoteSpriteSet(
-        body=first_available_body_sprite_set(
-            critical_trace_flick_note_body_sprites,
-            critical_trace_note_body_sprites,
-            trace_note_yellow_body_sprites,
-            trace_note_yellow_fallback_body_sprites,
-        ),
-        arrow=first_available_arrow_sprite_set(
-            critical_flick_arrow_sprites,
-            flick_arrow_yellow_sprites,
-            flick_arrow_yellow_fallback_sprites,
-        ),
-        tick=first_available_sprite(
-            BaseSkin.critical_trace_flick_note_tick,
-            BaseSkin.critical_trace_note_tick,
-            BaseSkin.trace_note_yellow_tick,
-            BaseSkin.trace_note_yellow_tick_fallback,
-        ),
-        slot=EMPTY_SPRITE,
-        slot_glow=EMPTY_SPRITE,
-    )
-    ActiveSkin.critical_trace_down_flick_note = NoteSpriteSet(
-        body=first_available_body_sprite_set(
-            critical_trace_down_flick_note_body_sprites,
-            critical_trace_flick_note_body_sprites,
-            critical_trace_note_body_sprites,
-            trace_note_yellow_body_sprites,
-            trace_note_yellow_fallback_body_sprites,
-        ),
-        arrow=first_available_arrow_sprite_set(
-            critical_flick_arrow_sprites,
-            flick_arrow_yellow_sprites,
-            flick_arrow_yellow_fallback_sprites,
-        ),
-        tick=first_available_sprite(
-            BaseSkin.critical_trace_down_flick_note_tick,
-            BaseSkin.critical_trace_flick_note_tick,
-            BaseSkin.critical_trace_note_tick,
-            BaseSkin.trace_note_yellow_tick,
-            BaseSkin.trace_note_yellow_tick_fallback,
-        ),
         slot=EMPTY_SPRITE,
         slot_glow=EMPTY_SPRITE,
     )
@@ -1268,11 +795,7 @@ def init_skin():
         slot_glow=EMPTY_SPRITE,
     )
     ActiveSkin.damage_note = NoteSpriteSet(
-        body=first_available_body_sprite_set(
-            damage_note_body_sprites,
-            trace_note_purple_body_sprites,
-            trace_note_purple_fallback_body_sprites,
-        ),
+        body=damage_note_body_sprites,
         arrow=EMPTY_ARROW_SPRITE_SET,
         tick=EMPTY_SPRITE,
         slot=EMPTY_SPRITE,

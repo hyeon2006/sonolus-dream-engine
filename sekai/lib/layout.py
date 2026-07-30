@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from enum import IntEnum
 from math import atan, ceil, floor, log, pi
-from typing import assert_never
 
 from sonolus.script.debug import static_error
 from sonolus.script.globals import level_data, level_memory
@@ -11,7 +10,6 @@ from sonolus.script.num import Num
 from sonolus.script.quad import Quad, QuadLike, Rect
 from sonolus.script.record import Record
 from sonolus.script.runtime import aspect_ratio, background, is_play, is_watch, screen, set_background
-from sonolus.script.values import swap
 from sonolus.script.vec import Vec2
 
 from sekai.lib.options import Options, StageCoverNoteSpeedCompensation
@@ -50,14 +48,11 @@ STAGE_WIDTH_MID = (APPROACH_SCALE + 1) / 2
 # extent so it stays finite (instead of diverging) as tilt approaches 0.
 STAGE_TILT_VANISH_MIN = 0.2
 
+FLICK_ARROW_Y_OFFSET = 0.4
+
 
 class FlickDirection(IntEnum):
     UP_OMNI = 0
-    UP_LEFT = 1
-    UP_RIGHT = 2
-    DOWN_OMNI = 3
-    DOWN_LEFT = 4
-    DOWN_RIGHT = 5
 
 
 @level_data
@@ -544,101 +539,43 @@ def layout_tick(lane: float, travel: float) -> Quad:
     )
 
 
-def layout_flick_arrow(
-    lane: float, size: float, direction: FlickDirection, travel: float, animation_progress: float
-) -> Quad:
-    match direction:
-        case FlickDirection.UP_OMNI:
-            is_down = False
-            reverse = False
-            animation_top_x_offset = 0
-        case FlickDirection.DOWN_OMNI:
-            is_down = True
-            reverse = False
-            animation_top_x_offset = 0
-        case FlickDirection.UP_LEFT:
-            is_down = False
-            reverse = False
-            animation_top_x_offset = -1
-        case FlickDirection.UP_RIGHT:
-            is_down = False
-            reverse = True
-            animation_top_x_offset = 1
-        case FlickDirection.DOWN_LEFT:
-            is_down = True
-            reverse = False
-            animation_top_x_offset = 1
-        case FlickDirection.DOWN_RIGHT:
-            is_down = True
-            reverse = True
-            animation_top_x_offset = -1
-        case _:
-            assert_never(direction)
+def layout_note_icon(lane: float, travel: float) -> Quad:
+    half_width = abs(DynamicLayout.scaled_note_h / DynamicLayout.w_scale)
+    return perspective_rect(
+        l=lane - half_width,
+        r=lane + half_width,
+        t=1 - DynamicLayout.note_h,
+        b=1 + DynamicLayout.note_h,
+        travel=travel,
+    )
+
+
+def layout_flick_arrow(lane: float, size: float, travel: float) -> Quad:
     w = clamp(size, 0, 3) / 2
     base_bl = transformed_vec_at(lane - w, travel)
     base_br = transformed_vec_at(lane + w, travel)
     up = (base_br - base_bl).rotate(pi / 2)
     base_tl = base_bl + up
     base_tr = base_br + up
-    offset_scale = animation_progress if not is_down else 1 - animation_progress
     offset = (
-        Vec2(animation_top_x_offset * DynamicLayout.w_scale, 2 * DynamicLayout.w_scale).rotate(-DynamicLayout.rotate)
-        * offset_scale
+        Vec2(0, FLICK_ARROW_Y_OFFSET * DynamicLayout.w_scale).rotate(-DynamicLayout.rotate)
         * tilt_width_factor(travel)
     )
-    result = Quad(
+    return Quad(
         bl=base_bl,
         br=base_br,
         tl=base_tl,
         tr=base_tr,
     ).translate(offset)
-    if reverse:
-        swap(result.bl, result.br)
-        swap(result.tl, result.tr)
-    return result
 
 
-def layout_flick_arrow_fallback(
-    lane: float, size: float, direction: FlickDirection, travel: float, animation_progress: float
-) -> Quad:
-    match direction:
-        case FlickDirection.UP_OMNI:
-            rotation = 0
-            animation_top_x_offset = 0
-            is_down = False
-        case FlickDirection.DOWN_OMNI:
-            rotation = pi
-            animation_top_x_offset = 0
-            is_down = True
-        case FlickDirection.UP_LEFT:
-            rotation = pi / 6
-            animation_top_x_offset = -1
-            is_down = False
-        case FlickDirection.UP_RIGHT:
-            rotation = -pi / 6
-            animation_top_x_offset = 1
-            is_down = False
-        case FlickDirection.DOWN_LEFT:
-            rotation = pi * 5 / 6
-            animation_top_x_offset = 1
-            is_down = True
-            lane -= 0.25  # Note: backwards from the regular skin due to how the sprites are designed
-        case FlickDirection.DOWN_RIGHT:
-            rotation = -pi * 5 / 6
-            animation_top_x_offset = -1
-            is_down = True
-            lane += 0.25
-        case _:
-            assert_never(direction)
-
+def layout_flick_arrow_fallback(lane: float, size: float, travel: float) -> Quad:
     w = clamp(size / 2, 1, 2)
-    offset_scale = animation_progress if not is_down else 1 - animation_progress
     width = tilt_width_factor(travel)
-    offset = Vec2(animation_top_x_offset * DynamicLayout.w_scale, 2 * DynamicLayout.w_scale) * offset_scale * width
+    offset = Vec2(0, FLICK_ARROW_Y_OFFSET * DynamicLayout.w_scale) * width
     return (
         Rect(l=-1, r=1, t=1, b=-1)
         .as_quad()
-        .rotate(rotation)
         .scale(Vec2(w, w) * DynamicLayout.w_scale * width)
         .translate(offset)
         .rotate(-DynamicLayout.rotate)

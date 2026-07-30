@@ -3,27 +3,132 @@ from sekai.lib.connector import ConnectorKind
 from sekai.lib.ease import EaseType
 from sekai.lib.note import NoteKind
 
-slide = LevelSlide(
+tap_notes = [
+    LevelNote(beat=1.0, lane=-3.0, size=0.5, kind=NoteKind.NORM_TAP),
+    LevelNote(beat=1.0, lane=3.0, size=0.5, kind=NoteKind.CRIT_TAP),
+    LevelNote(beat=2.0, lane=-3.0, size=0.75, kind=NoteKind.NORM_TAP),
+    LevelNote(beat=2.0, lane=3.0, size=0.75, kind=NoteKind.CRIT_TAP),
+    LevelNote(beat=3.0, lane=-3.0, size=1.0, kind=NoteKind.NORM_TAP),
+    LevelNote(beat=3.0, lane=3.0, size=1.0, kind=NoteKind.CRIT_TAP),
+    LevelNote(beat=4.0, lane=-3.0, size=1.5, kind=NoteKind.NORM_TAP),
+    LevelNote(beat=4.0, lane=3.0, size=1.5, kind=NoteKind.CRIT_TAP),
+    LevelNote(beat=5.0, lane=-3.0, size=2.0, kind=NoteKind.NORM_TAP),
+    LevelNote(beat=5.0, lane=3.0, size=2.0, kind=NoteKind.CRIT_TAP),
+]
+
+flick_notes = [
+    LevelNote(beat=6.0, lane=-3.0, size=0.5, kind=NoteKind.NORM_TAIL_FLICK),
+    LevelNote(beat=6.0, lane=3.0, size=0.5, kind=NoteKind.CRIT_TAIL_FLICK),
+    LevelNote(beat=7.0, lane=-3.0, size=0.75, kind=NoteKind.NORM_TAIL_FLICK),
+    LevelNote(beat=7.0, lane=3.0, size=0.75, kind=NoteKind.CRIT_TAIL_FLICK),
+    LevelNote(beat=8.0, lane=-3.0, size=1.0, kind=NoteKind.NORM_TAIL_FLICK),
+    LevelNote(beat=8.0, lane=3.0, size=1.0, kind=NoteKind.CRIT_TAIL_FLICK),
+    LevelNote(beat=9.0, lane=-3.0, size=1.5, kind=NoteKind.NORM_TAIL_FLICK),
+    LevelNote(beat=9.0, lane=3.0, size=1.5, kind=NoteKind.CRIT_TAIL_FLICK),
+    LevelNote(beat=10.0, lane=-3.0, size=2.0, kind=NoteKind.NORM_TAIL_FLICK),
+    LevelNote(beat=10.0, lane=3.0, size=2.0, kind=NoteKind.CRIT_TAIL_FLICK),
+]
+
+normal_tail_trace_slide = LevelSlide(
     notes=[
         LevelNote(
-            beat=2.0,
-            lane=-2.0,
-            size=1.0,
+            beat=12.0,
+            lane=-4.0,
+            size=0.75,
             kind=NoteKind.NORM_HEAD_TAP,
             segment_kind=ConnectorKind.ACTIVE_NORMAL,
         ),
         LevelNote(
-            beat=4.0,
+            beat=14.0,
             lane=0.0,
             size=1.0,
             kind=NoteKind.NORM_TICK,
             segment_kind=ConnectorKind.ACTIVE_NORMAL,
+            connector_ease=EaseType.OUT_QUAD,
         ),
         LevelNote(
-            beat=6.0,
-            lane=2.0,
-            size=1.0,
+            beat=16.0,
+            lane=-3.0,
+            size=1.5,
             kind=NoteKind.NORM_TAIL_TRACE,
+        ),
+    ]
+)
+
+critical_tail_trace_slide = LevelSlide(
+    notes=[
+        LevelNote(
+            beat=12.0,
+            lane=4.0,
+            size=0.75,
+            kind=NoteKind.CRIT_HEAD_TAP,
+            segment_kind=ConnectorKind.ACTIVE_CRITICAL,
+        ),
+        LevelNote(
+            beat=14.0,
+            lane=0.0,
+            size=1.0,
+            kind=NoteKind.CRIT_TICK,
+            segment_kind=ConnectorKind.ACTIVE_CRITICAL,
+            connector_ease=EaseType.IN_QUAD,
+        ),
+        LevelNote(
+            beat=16.0,
+            lane=3.0,
+            size=1.5,
+            kind=NoteKind.CRIT_TAIL_TRACE,
+        ),
+    ]
+)
+
+normal_flick_end_slide = LevelSlide(
+    notes=[
+        LevelNote(
+            beat=18.0,
+            lane=-4.0,
+            size=0.75,
+            kind=NoteKind.NORM_HEAD_TAP,
+            segment_kind=ConnectorKind.ACTIVE_NORMAL,
+        ),
+        LevelNote(
+            beat=20.0,
+            lane=-1.0,
+            size=1.0,
+            kind=NoteKind.NORM_TICK,
+            segment_kind=ConnectorKind.ACTIVE_NORMAL,
+            connector_ease=EaseType.IN_OUT_QUAD,
+        ),
+        LevelNote(
+            beat=22.0,
+            lane=-3.0,
+            size=1.5,
+            kind=NoteKind.NORM_TAIL_FLICK,
+        ),
+    ]
+)
+
+critical_flick_end_slide = LevelSlide(
+    notes=[
+        LevelNote(
+            beat=18.0,
+            lane=4.0,
+            size=0.75,
+            kind=NoteKind.CRIT_HEAD_TAP,
+            segment_kind=ConnectorKind.ACTIVE_CRITICAL,
+        ),
+        LevelNote(
+            beat=20.0,
+            lane=1.0,
+            size=1.0,
+            kind=NoteKind.CRIT_TICK,
+            segment_kind=ConnectorKind.ACTIVE_CRITICAL,
+            connector_ease=EaseType.OUT_IN_QUAD,
+        ),
+        LevelNote(
+            beat=22.0,
+            lane=3.0,
+            size=1.5,
+            kind=NoteKind.CRIT_TAIL_FLICK,
         ),
     ]
 )
@@ -31,7 +136,7 @@ slide = LevelSlide(
 guide = LevelSlide(
     notes=[
         LevelNote(
-            beat=8.0,
+            beat=24.0,
             lane=-2.0,
             size=1.0,
             kind=NoteKind.ANCHOR,
@@ -41,7 +146,7 @@ guide = LevelSlide(
             segment_blue=0.0,
         ),
         LevelNote(
-            beat=9.0,
+            beat=25.0,
             lane=0.0,
             size=1.5,
             kind=NoteKind.ANCHOR,
@@ -52,7 +157,7 @@ guide = LevelSlide(
             segment_alpha=0.5,
         ),
         LevelNote(
-            beat=10.0,
+            beat=26.0,
             lane=2.0,
             size=1.0,
             kind=NoteKind.ANCHOR,
@@ -67,7 +172,7 @@ guide = LevelSlide(
 short_red_to_cyan_guide = LevelSlide(
     notes=[
         LevelNote(
-            beat=12.0,
+            beat=28.0,
             lane=-5.0,
             size=0.75,
             kind=NoteKind.ANCHOR,
@@ -78,7 +183,7 @@ short_red_to_cyan_guide = LevelSlide(
             segment_alpha=1.0,
         ),
         LevelNote(
-            beat=12.25,
+            beat=28.25,
             lane=-3.0,
             size=0.75,
             kind=NoteKind.ANCHOR,
@@ -94,7 +199,7 @@ short_red_to_cyan_guide = LevelSlide(
 short_magenta_to_green_fade_guide = LevelSlide(
     notes=[
         LevelNote(
-            beat=13.0,
+            beat=29.0,
             lane=3.0,
             size=1.5,
             kind=NoteKind.ANCHOR,
@@ -106,7 +211,7 @@ short_magenta_to_green_fade_guide = LevelSlide(
             connector_ease=EaseType.OUT_IN_QUAD,
         ),
         LevelNote(
-            beat=13.5,
+            beat=29.5,
             lane=5.0,
             size=0.5,
             kind=NoteKind.ANCHOR,
@@ -122,7 +227,7 @@ short_magenta_to_green_fade_guide = LevelSlide(
 long_black_to_white_fade_guide = LevelSlide(
     notes=[
         LevelNote(
-            beat=16.0,
+            beat=31.0,
             lane=-5.0,
             size=0.5,
             kind=NoteKind.ANCHOR,
@@ -134,7 +239,7 @@ long_black_to_white_fade_guide = LevelSlide(
             connector_ease=EaseType.IN_OUT_QUAD,
         ),
         LevelNote(
-            beat=32.0,
+            beat=47.0,
             lane=5.0,
             size=1.5,
             kind=NoteKind.ANCHOR,
@@ -150,7 +255,7 @@ long_black_to_white_fade_guide = LevelSlide(
 long_blue_to_yellow_fade_guide = LevelSlide(
     notes=[
         LevelNote(
-            beat=18.0,
+            beat=33.0,
             lane=5.0,
             size=1.5,
             kind=NoteKind.ANCHOR,
@@ -162,7 +267,7 @@ long_blue_to_yellow_fade_guide = LevelSlide(
             connector_ease=EaseType.OUT_IN_QUAD,
         ),
         LevelNote(
-            beat=34.0,
+            beat=49.0,
             lane=-5.0,
             size=0.5,
             kind=NoteKind.ANCHOR,
@@ -181,9 +286,12 @@ level = build_level(
     bgm=None,
     entities=[
         LevelBpmChange(beat=0.0, bpm=120.0),
-        LevelNote(beat=1.0, lane=-2.0, size=1.0, kind=NoteKind.NORM_TAP),
-        slide,
-        LevelNote(beat=7.0, lane=2.0, size=1.0, kind=NoteKind.CRIT_TAIL_FLICK),
+        *tap_notes,
+        *flick_notes,
+        normal_tail_trace_slide,
+        critical_tail_trace_slide,
+        normal_flick_end_slide,
+        critical_flick_end_slide,
         guide,
         short_red_to_cyan_guide,
         short_magenta_to_green_fade_guide,
