@@ -279,7 +279,7 @@ def get_connector_base_alpha(kind: ConnectorKind) -> float:
             | ConnectorKind.GUIDE_CYAN
             | ConnectorKind.GUIDE_BLACK
         ):
-            return 0.6
+            return 1.0
         case ConnectorKind.NONE:
             return 0.0
         case _:
