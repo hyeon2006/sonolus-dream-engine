@@ -807,6 +807,15 @@ def has_tap_input(kind: NoteKind) -> bool:
     }
 
 
+def is_flick(kind: NoteKind) -> bool:
+    return kind in {
+        NoteKind.NORM_TRACE_FLICK,
+        NoteKind.CRIT_TRACE_FLICK,
+        NoteKind.NORM_TAIL_FLICK,
+        NoteKind.CRIT_TAIL_FLICK,
+    }
+
+
 def is_head(kind: NoteKind) -> bool:
     return kind in {
         NoteKind.NORM_HEAD_TAP,

@@ -10,7 +10,7 @@ from sekai.lib.layout import IDENTITY_AFFINE_TRANSFORM, layout_lane_area, refres
 from sekai.lib.stage import draw_stage_and_accessories, play_lane_hit_effects
 from sekai.lib.streams import Streams
 from sekai.play import input_manager
-from sekai.play.common import PlayLevelMemory
+from sekai.play.common import EMPTY_TAP_SFX_SUPPRESSION_DURATION, PlayLevelMemory
 
 
 @level_memory
@@ -46,7 +46,7 @@ class StaticStage(PlayArchetype):
             if touch.started:
                 play_lane_hit_effects(
                     rounded_lane,
-                    sfx=time() > PlayLevelMemory.last_note_sfx_time + 0.6,
+                    sfx=time() >= PlayLevelMemory.last_flick_sfx_time + EMPTY_TAP_SFX_SUPPRESSION_DURATION,
                     transform=IDENTITY_AFFINE_TRANSFORM,
                 )
                 if not empty_lanes.is_full():
@@ -57,7 +57,7 @@ class StaticStage(PlayArchetype):
                 if rounded_lane != prev_rounded_lane:
                     play_lane_hit_effects(
                         rounded_lane,
-                        sfx=time() > PlayLevelMemory.last_note_sfx_time + 0.6,
+                        sfx=time() >= PlayLevelMemory.last_flick_sfx_time + EMPTY_TAP_SFX_SUPPRESSION_DURATION,
                         transform=IDENTITY_AFFINE_TRANSFORM,
                     )
                     if not empty_lanes.is_full():

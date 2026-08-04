@@ -49,6 +49,7 @@ from sekai.lib.note import (
     has_tap_input,
     hitbox_draw_alpha,
     hitbox_draw_start,
+    is_flick,
     is_head,
     map_note_kind,
     play_note_hit_effects,
@@ -362,7 +363,6 @@ class BaseNote(PlayArchetype):
         for touch in touches():
             if not self.check_touch_is_eligible_for_trace(touch):
                 continue
-            input_manager.disallow_empty(touch)
             if not self.check_touch_is_eligible_for_trace_flick(touch):
                 continue
             has_flick = True
@@ -489,8 +489,8 @@ class BaseNote(PlayArchetype):
         self.post_judge()
 
     def post_judge(self):
-        if self.should_play_hit_effects:
-            PlayLevelMemory.last_note_sfx_time = time()
+        if self.should_play_hit_effects and is_flick(self.kind):
+            PlayLevelMemory.last_flick_sfx_time = time()
 
     @property
     def progress(self) -> float:
