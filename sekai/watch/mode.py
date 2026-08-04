@@ -11,6 +11,7 @@ from sekai.watch.note import WATCH_NOTE_ARCHETYPES
 from sekai.watch.sim_line import WatchSimLine
 from sekai.watch.slot_effect import WATCH_SLOT_EFFECT_ARCHETYPES
 from sekai.watch.static_stage import WatchScheduledLaneEffect, WatchStaticStage
+from sekai.watch.timed_line import WATCH_TIMED_LINE_ARCHETYPES
 from sekai.watch.timescale import WatchTimescaleChange, WatchTimescaleGroup
 from sekai.watch.update_spawn import update_spawn
 
@@ -26,6 +27,7 @@ watch_mode = WatchMode(
         *WATCH_CONNECTOR_ARCHETYPES,
         *WATCH_SLOT_EFFECT_ARCHETYPES,
         WatchSimLine,
+        *WATCH_TIMED_LINE_ARCHETYPES,
     ],
     skin=BaseSkin,
     effects=Effects,

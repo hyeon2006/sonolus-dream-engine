@@ -20,6 +20,7 @@ from sekai.play.connector import Connector
 from sekai.play.initialization import Initialization
 from sekai.play.note import NOTE_ARCHETYPES, BaseNote
 from sekai.play.sim_line import SimLine
+from sekai.play.timed_line import MeasureLine, SkillActivationLine
 from sekai.play.timescale import TimescaleChange, TimescaleGroup
 
 
@@ -109,7 +110,21 @@ class LevelSlide:
     notes: list[LevelNote] = field(default_factory=list)
 
 
-type LevelEntities = LevelBpmChange | LevelTimescaleGroup | LevelNote | LevelSlide
+@dataclass
+class LevelMeasureLine:
+    beat: float
+    timescale_group: LevelTimescaleGroup | None = None
+
+
+@dataclass
+class LevelSkillActivationLine:
+    beat: float
+    timescale_group: LevelTimescaleGroup | None = None
+
+
+type LevelEntities = (
+    LevelBpmChange | LevelTimescaleGroup | LevelNote | LevelSlide | LevelMeasureLine | LevelSkillActivationLine
+)
 
 
 def _note_archetype_for(kind: NoteKind) -> type[PlayArchetype]:
@@ -126,6 +141,7 @@ def build_level(
     level_ts_groups: list[LevelTimescaleGroup] = []
     top_notes: list[LevelNote] = []
     slides: list[LevelSlide] = []
+    timed_lines: list[LevelMeasureLine | LevelSkillActivationLine] = []
 
     for entity in entities:
         if isinstance(entity, LevelBpmChange):
@@ -136,6 +152,8 @@ def build_level(
             top_notes.append(entity)
         elif isinstance(entity, LevelSlide):
             slides.append(entity)
+        elif isinstance(entity, (LevelMeasureLine, LevelSkillActivationLine)):
+            timed_lines.append(entity)
         else:
             raise TypeError(f"Unsupported level entity: {type(entity).__name__}")
 
@@ -157,6 +175,11 @@ def build_level(
             default_ts_group, group_entities = _build_timescale_group(default_level_group)
             out_entities.extend(group_entities)
         return default_ts_group
+
+    def resolve_line_ts_group(level_group: LevelTimescaleGroup | None) -> TimescaleGroup:
+        if level_group is None and level_ts_groups:
+            return ts_group_map[id(level_ts_groups[0])]
+        return resolve_ts_group(level_group)
 
     note_entities: list[BaseNote] = []
     slide_non_attached: dict[int, list[BaseNote]] = {}
@@ -249,6 +272,13 @@ def build_level(
         note.is_attached = True
 
     out_entities.extend(BpmChange(beat=level_bpm.beat, bpm=level_bpm.bpm) for level_bpm in bpm_changes)
+
+    for level_line in timed_lines:
+        group = resolve_line_ts_group(level_line.timescale_group)
+        if isinstance(level_line, LevelMeasureLine):
+            out_entities.append(MeasureLine(beat=level_line.beat, timescale_group=group.ref()))
+        else:
+            out_entities.append(SkillActivationLine(beat=level_line.beat, timescale_group=group.ref()))
 
     _emit_sim_lines(note_entities, out_entities)
 

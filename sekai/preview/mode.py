@@ -6,6 +6,7 @@ from sekai.preview.connector import PreviewConnector
 from sekai.preview.initialization import PreviewInitialization
 from sekai.preview.note import PREVIEW_NOTE_ARCHETYPES
 from sekai.preview.sim_line import PreviewSimLine
+from sekai.preview.timed_line import PREVIEW_TIMED_LINE_ARCHETYPES
 from sekai.preview.timescale import PreviewTimescaleChange, PreviewTimescaleGroup
 
 preview_mode = PreviewMode(
@@ -17,6 +18,7 @@ preview_mode = PreviewMode(
         *PREVIEW_NOTE_ARCHETYPES,
         PreviewConnector,
         PreviewSimLine,
+        *PREVIEW_TIMED_LINE_ARCHETYPES,
     ],
     skin=BaseSkin,
 )

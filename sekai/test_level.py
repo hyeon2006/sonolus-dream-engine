@@ -1,7 +1,16 @@
-from sekai.level_utils import LevelBpmChange, LevelNote, LevelSlide, build_level
+from sekai.level_utils import (
+    LevelBpmChange,
+    LevelMeasureLine,
+    LevelNote,
+    LevelSkillActivationLine,
+    LevelSlide,
+    build_level,
+)
 from sekai.lib.connector import ConnectorKind
 from sekai.lib.ease import EaseType
 from sekai.lib.note import NoteKind
+
+measure_lines = [LevelMeasureLine(beat=beat) for beat in range(0, 49, 4)]
 
 tap_notes = [
     LevelNote(beat=1.0, lane=-3.0, size=0.5, kind=NoteKind.NORM_TAP),
@@ -290,6 +299,8 @@ level = build_level(
         LevelBpmChange(beat=0.0, bpm=120.0),
         *tap_notes,
         *flick_notes,
+        *measure_lines,
+        LevelSkillActivationLine(beat=11.0),
         normal_tail_trace_slide,
         critical_tail_trace_slide,
         normal_flick_end_slide,

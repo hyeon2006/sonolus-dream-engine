@@ -1,4 +1,4 @@
-from sonolus.script.archetype import PreviewArchetype, StandardImport, entity_data
+from sonolus.script.archetype import PreviewArchetype, StandardImport, callback, entity_data
 from sonolus.script.printing import PrintColor, PrintFormat
 from sonolus.script.quad import Quad
 from sonolus.script.timing import beat_to_time
@@ -6,6 +6,7 @@ from sonolus.script.timing import beat_to_time
 from sekai.lib import archetype_names
 from sekai.lib.layer import LAYER_TIMESCALE_LINE, get_z
 from sekai.lib.skin import ActiveSkin
+from sekai.lib.timescale import TimescaleData, register_timescale_group
 from sekai.preview.layout import PREVIEW_BAR_LINE_ALPHA, PreviewData, layout_preview_bar_line, print_at_time
 
 
@@ -47,8 +48,7 @@ class PreviewTimescaleChange(PreviewArchetype):
 class PreviewTimescaleGroup(PreviewArchetype):
     name = archetype_names.TIMESCALE_GROUP
 
+    @callback(order=-2)
     def preprocess(self):
-        if PreviewData.min_timescale_group == 0:
-            PreviewData.min_timescale_group = self.index
-        else:
-            PreviewData.min_timescale_group = min(PreviewData.min_timescale_group, self.index)
+        register_timescale_group(self.index)
+        PreviewData.min_timescale_group = TimescaleData.first_group

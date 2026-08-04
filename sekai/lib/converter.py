@@ -29,6 +29,7 @@ from sekai.play.note import (
     TransientHiddenTickNote,
 )
 from sekai.play.sim_line import SimLine
+from sekai.play.timed_line import MeasureLine, SkillActivationLine
 from sekai.play.timescale import TimescaleChange, TimescaleGroup
 
 note_type_mapping = {
@@ -142,12 +143,14 @@ def convert_pjsekai_extended_level_data(data: ExternalLevelData) -> LevelData | 
     pjsekai_data = PJSekaiExtendedLevelData(data.entities)
     bpm_changes = convert_bpm_changes(pjsekai_data)
     timescale_groups_by_index, timescale_entities = convert_timescale_groups(pjsekai_data)
+    timed_lines = convert_timed_lines(pjsekai_data, timescale_groups_by_index)
     notes = convert_notes(pjsekai_data, timescale_groups_by_index)
     guides = convert_guides(pjsekai_data, timescale_groups_by_index)
     entities = [
         Initialization(),
         *bpm_changes,
         *timescale_entities,
+        *timed_lines,
         *notes,
         *guides,
     ]
@@ -159,7 +162,7 @@ def convert_pjsekai_extended_level_data(data: ExternalLevelData) -> LevelData | 
     )
 
 
-def convert_timescale_groups(data: PJSekaiExtendedLevelData) -> tuple[dict[int, TimescaleChange], list[PlayArchetype]]:
+def convert_timescale_groups(data: PJSekaiExtendedLevelData) -> tuple[dict[int, TimescaleGroup], list[PlayArchetype]]:
     groups_by_original_index = {}
     entities = []
     for i, entity in data.enumerate_by_archetype("TimeScaleGroup"):
@@ -199,8 +202,30 @@ def convert_bpm_changes(data: PJSekaiExtendedLevelData) -> list[PlayArchetype]:
     return entities
 
 
+def convert_timed_lines(
+    data: PJSekaiExtendedLevelData,
+    timescale_groups_by_index: dict[int, TimescaleGroup],
+) -> list[PlayArchetype]:
+    first_group = next(iter(timescale_groups_by_index.values()))
+    entities: list[PlayArchetype] = []
+    for archetype_name, archetype in (
+        ("MeasureLine", MeasureLine),
+        ("SkillActivationLine", SkillActivationLine),
+    ):
+        for entity in data.iter_by_archetype(archetype_name):
+            group_index = entity.data.get("#TIMESCALE_GROUP", entity.data.get("timeScaleGroup", -1))
+            group = timescale_groups_by_index.get(group_index, first_group)
+            entities.append(
+                archetype(
+                    beat=entity.data["#BEAT"],
+                    timescale_group=group.ref(),
+                )
+            )
+    return entities
+
+
 def convert_notes(
-    data: PJSekaiExtendedLevelData, timescale_groups_by_index: dict[int, TimescaleChange]
+    data: PJSekaiExtendedLevelData, timescale_groups_by_index: dict[int, TimescaleGroup]
 ) -> list[PlayArchetype]:
     entities = []
     notes_by_original_index = {}
@@ -260,7 +285,7 @@ def convert_notes(
 
 
 def convert_guides(
-    data: PJSekaiExtendedLevelData, timescale_groups_by_index: dict[int, TimescaleChange]
+    data: PJSekaiExtendedLevelData, timescale_groups_by_index: dict[int, TimescaleGroup]
 ) -> list[PlayArchetype]:
     entities = []
 
