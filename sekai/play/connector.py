@@ -12,6 +12,7 @@ from sonolus.script.timing import beat_to_time
 from sekai.debug import DISABLE_NOTES
 from sekai.lib import archetype_names
 from sekai.lib.connector import (
+    CONNECTOR_LENIENCY,
     CONNECTOR_SLOT_SPAWN_PERIOD,
     CONNECTOR_THROUGH_JUDGE_LINE_DESPAWN_DELAY,
     CONNECTOR_TRAIL_SPAWN_PERIOD,
@@ -22,7 +23,6 @@ from sekai.lib.connector import (
     destroy_looped_sfx,
     draw_connector,
     draw_connector_slot_glow_effect,
-    get_connector_input_leniency,
     is_fake_active_connector,
     is_guide_connector,
     schedule_connector_sfx,
@@ -110,8 +110,6 @@ class Connector(PlayArchetype):
                     | ConnectorKind.GUIDE_PURPLE
                     | ConnectorKind.GUIDE_CYAN
                     | ConnectorKind.GUIDE_BLACK
-                    | ConnectorKind.DAMAGE
-                    | ConnectorKind.FAKE_DAMAGE
                 ):
                     pass
                 case _:
@@ -150,7 +148,7 @@ class Connector(PlayArchetype):
                     self.head,
                     self.tail,
                     offset_adjusted_time(),
-                    get_connector_input_leniency(self.kind),
+                    CONNECTOR_LENIENCY,
                 )
                 bounds = self.active_connector_info.input_bounds
                 for touch in touches():
@@ -181,13 +179,7 @@ class Connector(PlayArchetype):
             segment_tail = self.segment_tail
             if self.active_head_ref.index > 0:
                 active_head = self.active_head
-                if self.kind == ConnectorKind.DAMAGE:
-                    # No 'leniency' to be active at the start
-                    if self.active_connector_info.is_active:
-                        visual_state = ConnectorVisualState.ACTIVE
-                    else:
-                        visual_state = ConnectorVisualState.WAITING
-                elif time() < active_head.target_time:
+                if time() < active_head.target_time:
                     visual_state = ConnectorVisualState.WAITING
                 elif (
                     offset_adjusted_time() < beat_to_time(active_head.beat + START_LENIENCY_BEATS)
@@ -409,7 +401,6 @@ class SlideManager(PlayArchetype):
                 | ConnectorKind.ACTIVE_CRITICAL
                 | ConnectorKind.ACTIVE_FAKE_NORMAL
                 | ConnectorKind.ACTIVE_FAKE_CRITICAL
-                | ConnectorKind.DAMAGE
             ):
                 draw_slide_note_head(
                     self.active_head.kind,

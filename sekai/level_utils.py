@@ -43,9 +43,6 @@ _ACTIVE_HOLD_SEGMENT_KINDS = frozenset(
     }
 )
 
-# Segment kinds whose connectors track touches through their section's active head/tail refs.
-_INPUT_TRACKED_SEGMENT_KINDS = _ACTIVE_HOLD_SEGMENT_KINDS | {ConnectorKind.DAMAGE}
-
 
 def _build_silent_wav(duration_seconds: float = 60.0, sample_rate: int = 8000) -> bytes:
     num_samples = int(duration_seconds * sample_rate)
@@ -231,7 +228,7 @@ def build_level(
                 segment_head_ref=segment_head.ref(),
                 segment_tail_ref=segment_tail.ref(),
             )
-            if slide_kind in _INPUT_TRACKED_SEGMENT_KINDS:
+            if slide_kind in _ACTIVE_HOLD_SEGMENT_KINDS:
                 connector.active_head_ref = built[0].ref()
                 connector.active_tail_ref = built[last_index].ref()
             out_entities.append(connector)

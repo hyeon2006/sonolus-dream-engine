@@ -29,156 +29,90 @@ class BaseSkin:
     stage_left_border: StandardSprite.STAGE_LEFT_BORDER
     stage_right_border: StandardSprite.STAGE_RIGHT_BORDER
 
-    sekai_stage: Sprite = sprite("Sekai Stage")
+    holodori_stage: Sprite = sprite("Holodori Stage")
+    holodori_stage_background: Sprite = sprite("Holodori Stage Background")
+    holodori_stage_judgment_line: Sprite = sprite("Holodori Stage Judgment Line")
 
     sim_line: StandardSprite.SIMULTANEOUS_CONNECTION_NEUTRAL
+    measure_line: Sprite = sprite("Holodori Measure Line")
+    skill_activation_line: Sprite = sprite("Holodori Skill Activation Line")
 
     note_icon: Sprite = sprite("Holodori Note Icon")
 
-    note_cyan_left: Sprite = sprite("Sekai Note Cyan Left")
-    note_cyan_middle: Sprite = sprite("Sekai Note Cyan Middle")
-    note_cyan_right: Sprite = sprite("Sekai Note Cyan Right")
-    note_cyan_fallback: StandardSprite.NOTE_HEAD_CYAN
+    note_normal_left: Sprite = sprite("Holodori Normal Note Left")
+    note_normal_middle: Sprite = sprite("Holodori Normal Note Middle")
+    note_normal_right: Sprite = sprite("Holodori Normal Note Right")
+    note_normal_fallback: StandardSprite.NOTE_HEAD_CYAN
 
-    note_green_left: Sprite = sprite("Sekai Note Green Left")
-    note_green_middle: Sprite = sprite("Sekai Note Green Middle")
-    note_green_right: Sprite = sprite("Sekai Note Green Right")
-    note_green_fallback: StandardSprite.NOTE_HEAD_GREEN
+    note_offbeat_left: Sprite = sprite("Holodori Offbeat Note Left")
+    note_offbeat_middle: Sprite = sprite("Holodori Offbeat Note Middle")
+    note_offbeat_right: Sprite = sprite("Holodori Offbeat Note Right")
+    note_offbeat_fallback: StandardSprite.NOTE_HEAD_CYAN
 
-    note_red_left: Sprite = sprite("Sekai Note Red Left")
-    note_red_middle: Sprite = sprite("Sekai Note Red Middle")
-    note_red_right: Sprite = sprite("Sekai Note Red Right")
-    note_red_fallback: StandardSprite.NOTE_HEAD_RED
+    note_long_left: Sprite = sprite("Holodori Long Note Left")
+    note_long_middle: Sprite = sprite("Holodori Long Note Middle")
+    note_long_right: Sprite = sprite("Holodori Long Note Right")
+    note_long_fallback: StandardSprite.NOTE_HEAD_GREEN
 
-    note_yellow_left: Sprite = sprite("Sekai Note Yellow Left")
-    note_yellow_middle: Sprite = sprite("Sekai Note Yellow Middle")
-    note_yellow_right: Sprite = sprite("Sekai Note Yellow Right")
-    note_yellow_fallback: StandardSprite.NOTE_HEAD_YELLOW
+    note_flick_left: Sprite = sprite("Holodori Flick Note Left")
+    note_flick_middle: Sprite = sprite("Holodori Flick Note Middle")
+    note_flick_right: Sprite = sprite("Holodori Flick Note Right")
+    note_flick_fallback: StandardSprite.NOTE_HEAD_RED
 
-    normal_note_left: Sprite = sprite("Sekai Normal Note Left")
-    normal_note_middle: Sprite = sprite("Sekai Normal Note Middle")
-    normal_note_right: Sprite = sprite("Sekai Normal Note Right")
-    normal_note_basic: Sprite = sprite("Sekai Normal Note Basic")
+    note_accent_left: Sprite = sprite("Holodori Accent Note Left")
+    note_accent_middle: Sprite = sprite("Holodori Accent Note Middle")
+    note_accent_right: Sprite = sprite("Holodori Accent Note Right")
+    note_accent_fallback: StandardSprite.NOTE_HEAD_YELLOW
 
-    slide_note_left: Sprite = sprite("Sekai Slide Note Left")
-    slide_note_middle: Sprite = sprite("Sekai Slide Note Middle")
-    slide_note_right: Sprite = sprite("Sekai Slide Note Right")
-    slide_note_basic: Sprite = sprite("Sekai Slide Note Basic")
+    long_relay_note: Sprite = sprite("Holodori Normal Relay")
+    long_relay_note_fallback: StandardSprite.NOTE_TICK_GREEN
 
-    flick_note_left: Sprite = sprite("Sekai Flick Note Left")
-    flick_note_middle: Sprite = sprite("Sekai Flick Note Middle")
-    flick_note_right: Sprite = sprite("Sekai Flick Note Right")
-    flick_note_basic: Sprite = sprite("Sekai Flick Note Basic")
+    long_accent_relay_note: Sprite = sprite("Holodori Accent Relay")
+    long_accent_relay_note_fallback: StandardSprite.NOTE_TICK_YELLOW
 
-    critical_note_left: Sprite = sprite("Sekai Critical Note Left")
-    critical_note_middle: Sprite = sprite("Sekai Critical Note Middle")
-    critical_note_right: Sprite = sprite("Sekai Critical Note Right")
-    critical_note_basic: Sprite = sprite("Sekai Critical Note Basic")
+    connection_long_normal: Sprite = sprite("Holodori Long Normal")
+    connection_long_normal_fallback: StandardSprite.NOTE_CONNECTION_GREEN_SEAMLESS
 
-    critical_slide_note_left: Sprite = sprite("Sekai Critical Slide Note Left")
-    critical_slide_note_middle: Sprite = sprite("Sekai Critical Slide Note Middle")
-    critical_slide_note_right: Sprite = sprite("Sekai Critical Slide Note Right")
-    critical_slide_note_basic: Sprite = sprite("Sekai Critical Slide Note Basic")
+    connection_long_accent: Sprite = sprite("Holodori Long Accent")
+    connection_long_accent_fallback: StandardSprite.NOTE_CONNECTION_YELLOW_SEAMLESS
 
-    critical_flick_note_left: Sprite = sprite("Sekai Critical Flick Note Left")
-    critical_flick_note_middle: Sprite = sprite("Sekai Critical Flick Note Middle")
-    critical_flick_note_right: Sprite = sprite("Sekai Critical Flick Note Right")
-    critical_flick_note_basic: Sprite = sprite("Sekai Critical Flick Note Basic")
+    slot_normal: Sprite = sprite("Holodori Slot Normal")
+    slot_slide: Sprite = sprite("Holodori Slot Long")
+    slot_flick: Sprite = sprite("Holodori Slot Flick")
+    slot_accent: Sprite = sprite("Holodori Slot Accent")
 
-    slide_tick_note_green: Sprite = sprite("Sekai Diamond Green")
-    slide_tick_note_green_fallback: StandardSprite.NOTE_TICK_GREEN
+    slot_glow_normal: Sprite = sprite("Holodori Slot Glow Normal")
+    slot_glow_slide: Sprite = sprite("Holodori Slot Glow Long")
+    slot_glow_flick: Sprite = sprite("Holodori Slot Glow Flick")
+    slot_glow_accent: Sprite = sprite("Holodori Slot Glow Accent")
 
-    slide_tick_note_yellow: Sprite = sprite("Sekai Diamond Yellow")
-    slide_tick_note_yellow_fallback: StandardSprite.NOTE_TICK_YELLOW
+    flick_arrow_: SpriteGroup = sprite_group(f"Holodori Flick Arrow {i}" for i in range(1, 7))
+    flick_arrow_fallback: StandardSprite.DIRECTIONAL_MARKER_RED
 
-    normal_slide_tick_note: Sprite = sprite("Sekai Normal Slide Diamond")
+    flick_arrow_accent: SpriteGroup = sprite_group(f"Holodori Flick Arrow Accent {i}" for i in range(1, 7))
+    flick_arrow_accent_fallback: StandardSprite.DIRECTIONAL_MARKER_YELLOW
 
-    critical_slide_tick_note: Sprite = sprite("Sekai Critical Slide Diamond")
+    damage_note_left: Sprite = sprite("Holodori Damage Note Left")
+    damage_note_middle: Sprite = sprite("Holodori Damage Note Middle")
+    damage_note_right: Sprite = sprite("Holodori Damage Note Right")
+    damage_note_basic: Sprite = sprite("Holodori Damage Note Basic")
 
-    active_slide_connection_green_normal: Sprite = sprite("Sekai Active Slide Connection Green")
-    active_slide_connection_green_active: Sprite = sprite("Sekai Active Slide Connection Green Active")
-    active_slide_connection_green_fallback: StandardSprite.NOTE_CONNECTION_GREEN_SEAMLESS
-
-    active_slide_connection_yellow_normal: Sprite = sprite("Sekai Active Slide Connection Yellow")
-    active_slide_connection_yellow_active: Sprite = sprite("Sekai Active Slide Connection Yellow Active")
-    active_slide_connection_yellow_fallback: StandardSprite.NOTE_CONNECTION_YELLOW_SEAMLESS
-
-    normal_active_slide_connection_normal: Sprite = sprite("Sekai Normal Active Slide Connection Normal")
-    normal_active_slide_connection_active: Sprite = sprite("Sekai Normal Active Slide Connection Active")
-
-    critical_active_slide_connection_normal: Sprite = sprite("Sekai Critical Active Slide Connection Normal")
-    critical_active_slide_connection_active: Sprite = sprite("Sekai Critical Active Slide Connection Active")
-
-    slot_cyan: Sprite = sprite("Sekai Slot Cyan")
-    slot_green: Sprite = sprite("Sekai Slot Green")
-    slot_red: Sprite = sprite("Sekai Slot Red")
-    slot_yellow: Sprite = sprite("Sekai Slot Yellow")
-    slot_yellow_flick: Sprite = sprite("Sekai Slot Yellow Flick")
-    slot_yellow_slider: Sprite = sprite("Sekai Slot Yellow Slider")
-
-    slot_normal: Sprite = sprite("Sekai Slot Normal")
-    slot_slide: Sprite = sprite("Sekai Slot Slide")
-    slot_flick: Sprite = sprite("Sekai Slot Flick")
-    slot_critical: Sprite = sprite("Sekai Slot Critical")
-    slot_critical_slide: Sprite = sprite("Sekai Slot Critical Slide")
-    slot_critical_flick: Sprite = sprite("Sekai Slot Critical Flick")
-
-    slot_glow_cyan: Sprite = sprite("Sekai Slot Glow Cyan")
-    slot_glow_green: Sprite = sprite("Sekai Slot Glow Green")
-    slot_glow_red: Sprite = sprite("Sekai Slot Glow Red")
-    slot_glow_yellow: Sprite = sprite("Sekai Slot Glow Yellow")
-    slot_glow_yellow_flick: Sprite = sprite("Sekai Slot Glow Yellow Flick")
-    slot_glow_yellow_slider_tap: Sprite = sprite("Sekai Slot Glow Yellow Slider Tap")
-
-    slot_glow_normal: Sprite = sprite("Sekai Slot Glow Normal")
-    slot_glow_slide: Sprite = sprite("Sekai Slot Glow Slide")
-    slot_glow_flick: Sprite = sprite("Sekai Slot Glow Flick")
-    slot_glow_critical: Sprite = sprite("Sekai Slot Glow Critical")
-    slot_glow_critical_slide: Sprite = sprite("Sekai Slot Glow Critical Slide")
-    slot_glow_critical_flick: Sprite = sprite("Sekai Slot Glow Critical Flick")
-
-    slide_connector_slot_glow_green: Sprite = sprite("Sekai Slot Glow Green Slider Hold")
-    slide_connector_slot_glow_yellow: Sprite = sprite("Sekai Slot Glow Yellow Slider Hold")
-
-    normal_slide_connector_slot_glow: Sprite = sprite("Sekai Normal Slide Slot Glow")
-    critical_slide_connector_slot_glow: Sprite = sprite("Sekai Critical Slide Slot Glow")
-
-    flick_arrow_red_up: SpriteGroup = sprite_group(f"Sekai Flick Arrow Red Up {i}" for i in range(1, 7))
-    flick_arrow_red_fallback: StandardSprite.DIRECTIONAL_MARKER_RED
-
-    flick_arrow_yellow_up: SpriteGroup = sprite_group(f"Sekai Flick Arrow Yellow Up {i}" for i in range(1, 7))
-    flick_arrow_yellow_fallback: StandardSprite.DIRECTIONAL_MARKER_YELLOW
-
-    flick_arrow_up: SpriteGroup = sprite_group(f"Sekai Flick Arrow Up {i}" for i in range(1, 7))
-
-    critical_flick_arrow_up: SpriteGroup = sprite_group(f"Sekai Critical Flick Arrow Up {i}" for i in range(1, 7))
-
-    damage_note_left: Sprite = sprite("Sekai Damage Note Left")
-    damage_note_middle: Sprite = sprite("Sekai Damage Note Middle")
-    damage_note_right: Sprite = sprite("Sekai Damage Note Right")
-    damage_note_basic: Sprite = sprite("Sekai Damage Note Basic")
-
-    guide_green: Sprite = sprite("Sekai Guide Green")
+    guide_green: Sprite = sprite("Holodori Guide Green")
     guide_green_fallback: StandardSprite.NOTE_CONNECTION_GREEN_SEAMLESS
-    guide_yellow: Sprite = sprite("Sekai Guide Yellow")
+    guide_yellow: Sprite = sprite("Holodori Guide Yellow")
     guide_yellow_fallback: StandardSprite.NOTE_CONNECTION_YELLOW_SEAMLESS
-    guide_red: Sprite = sprite("Sekai Guide Red")
+    guide_red: Sprite = sprite("Holodori Guide Red")
     guide_red_fallback: StandardSprite.NOTE_CONNECTION_RED_SEAMLESS
-    guide_purple: Sprite = sprite("Sekai Guide Purple")
-    guide_purple_fallback: StandardSprite.NOTE_CONNECTION_PURPLE_SEAMLESS
-    guide_cyan: Sprite = sprite("Sekai Guide Cyan")
+    guide_magenta: Sprite = sprite("Holodori Guide Magenta")
+    guide_magenta_fallback: StandardSprite.NOTE_CONNECTION_PURPLE_SEAMLESS
+    guide_cyan: Sprite = sprite("Holodori Guide Cyan")
     guide_cyan_fallback: StandardSprite.NOTE_CONNECTION_CYAN_SEAMLESS
-    guide_blue: Sprite = sprite("Sekai Guide Blue")
+    guide_blue: Sprite = sprite("Holodori Guide Blue")
     guide_blue_fallback: StandardSprite.NOTE_CONNECTION_BLUE_SEAMLESS
-    guide_neutral: Sprite = sprite("Sekai Guide Neutral")
+    guide_neutral: Sprite = sprite("Holodori Guide Neutral")
     guide_neutral_fallback: StandardSprite.NOTE_CONNECTION_NEUTRAL_SEAMLESS
-    guide_black: Sprite = sprite("Sekai Guide Black")
+    guide_black: Sprite = sprite("Holodori Guide Black")
     guide_black_fallback: StandardSprite.NOTE_CONNECTION_NEUTRAL_SEAMLESS
-
-    damage_slide_connection: Sprite = sprite("Sekai Damage Slide Connection")
-    damage_slide_connection_fallback: StandardSprite.NOTE_CONNECTION_PURPLE_SEAMLESS
-    damage_slide_connection_active: Sprite = sprite("Sekai Damage Slide Connection Active")
-    damage_slide_connection_active_fallback: StandardSprite.NOTE_CONNECTION_RED_SEAMLESS
 
     beat_line: StandardSprite.GRID_NEUTRAL
     preview_divider: StandardSprite.GRID_NEUTRAL
@@ -362,137 +296,62 @@ EMPTY_NOTE_SPRITE_SET = NoteSpriteSet(
 )
 
 
-class ActiveConnectorRenderType(IntEnum):
-    NORMAL = 0
-    FALLBACK = 1
-
-
-class ActiveConnectionSpriteSet(Record):
-    render_type: ActiveConnectorRenderType
-    normal: Sprite
-    active: Sprite
-
-    @property
-    def available(self):
-        return self.normal.is_available
-
-    @classmethod
-    def of_normal(cls, normal: Sprite, active: Sprite) -> Self:
-        return cls(
-            render_type=ActiveConnectorRenderType.NORMAL,
-            normal=normal,
-            active=active,
-        )
-
-    @classmethod
-    def of_fallback(cls, fallback: Sprite) -> Self:
-        return cls(
-            render_type=ActiveConnectorRenderType.FALLBACK,
-            normal=fallback,
-            active=fallback,
-        )
-
-
-EMPTY_ACTIVE_CONNECTION_SPRITE_SET = ActiveConnectionSpriteSet(
-    render_type=ActiveConnectorRenderType.FALLBACK,
-    normal=EMPTY_SPRITE,
-    active=EMPTY_SPRITE,
-)
-
-
-def first_available_active_connection_sprite_set(*sets: ActiveConnectionSpriteSet) -> ActiveConnectionSpriteSet:
-    result = +EMPTY_ACTIVE_CONNECTION_SPRITE_SET
-    for s in sets:
-        if s.available:
-            result @= s
-            break
-    return result
-
-
 class ActiveConnectorSpriteSet(Record):
-    connection: ActiveConnectionSpriteSet
+    connection: Sprite
     slot_glow: Sprite
 
 
-note_cyan_body_sprites = BodySpriteSet.of_normal(
-    left=BaseSkin.note_cyan_left,
-    middle=BaseSkin.note_cyan_middle,
-    right=BaseSkin.note_cyan_right,
-)
-note_cyan_fallback_body_sprites = BodySpriteSet.of_normal_fallback(
-    fallback=BaseSkin.note_cyan_fallback,
-)
-note_green_body_sprites = BodySpriteSet.of_normal(
-    left=BaseSkin.note_green_left,
-    middle=BaseSkin.note_green_middle,
-    right=BaseSkin.note_green_right,
-)
-note_green_fallback_body_sprites = BodySpriteSet.of_normal_fallback(
-    fallback=BaseSkin.note_green_fallback,
-)
-note_red_body_sprites = BodySpriteSet.of_normal(
-    left=BaseSkin.note_red_left,
-    middle=BaseSkin.note_red_middle,
-    right=BaseSkin.note_red_right,
-)
-note_red_fallback_body_sprites = BodySpriteSet.of_normal_fallback(
-    fallback=BaseSkin.note_red_fallback,
-)
-note_yellow_body_sprites = BodySpriteSet.of_normal(
-    left=BaseSkin.note_yellow_left,
-    middle=BaseSkin.note_yellow_middle,
-    right=BaseSkin.note_yellow_right,
-)
-note_yellow_fallback_body_sprites = BodySpriteSet.of_normal_fallback(
-    fallback=BaseSkin.note_yellow_fallback,
-)
 normal_note_body_sprites = BodySpriteSet.of_normal(
-    left=BaseSkin.normal_note_left,
-    middle=BaseSkin.normal_note_middle,
-    right=BaseSkin.normal_note_right,
+    left=BaseSkin.note_normal_left,
+    middle=BaseSkin.note_normal_middle,
+    right=BaseSkin.note_normal_right,
 )
-slide_note_body_sprites = BodySpriteSet.of_normal(
-    left=BaseSkin.slide_note_left,
-    middle=BaseSkin.slide_note_middle,
-    right=BaseSkin.slide_note_right,
+normal_note_fallback_body_sprites = BodySpriteSet.of_normal_fallback(
+    fallback=BaseSkin.note_normal_fallback,
+)
+offbeat_note_body_sprites = BodySpriteSet.of_normal(
+    left=BaseSkin.note_offbeat_left,
+    middle=BaseSkin.note_offbeat_middle,
+    right=BaseSkin.note_offbeat_right,
+)
+offbeat_note_fallback_body_sprites = BodySpriteSet.of_normal_fallback(
+    fallback=BaseSkin.note_offbeat_fallback,
+)
+long_note_body_sprites = BodySpriteSet.of_normal(
+    left=BaseSkin.note_long_left,
+    middle=BaseSkin.note_long_middle,
+    right=BaseSkin.note_long_right,
+)
+long_note_fallback_body_sprites = BodySpriteSet.of_normal_fallback(
+    fallback=BaseSkin.note_long_fallback,
 )
 flick_note_body_sprites = BodySpriteSet.of_normal(
-    left=BaseSkin.flick_note_left,
-    middle=BaseSkin.flick_note_middle,
-    right=BaseSkin.flick_note_right,
+    left=BaseSkin.note_flick_left,
+    middle=BaseSkin.note_flick_middle,
+    right=BaseSkin.note_flick_right,
 )
-critical_note_body_sprites = BodySpriteSet.of_normal(
-    left=BaseSkin.critical_note_left,
-    middle=BaseSkin.critical_note_middle,
-    right=BaseSkin.critical_note_right,
+flick_note_fallback_body_sprites = BodySpriteSet.of_normal_fallback(
+    fallback=BaseSkin.note_flick_fallback,
 )
-critical_slide_note_body_sprites = BodySpriteSet.of_normal(
-    left=BaseSkin.critical_slide_note_left,
-    middle=BaseSkin.critical_slide_note_middle,
-    right=BaseSkin.critical_slide_note_right,
+accent_note_body_sprites = BodySpriteSet.of_normal(
+    left=BaseSkin.note_accent_left,
+    middle=BaseSkin.note_accent_middle,
+    right=BaseSkin.note_accent_right,
 )
-critical_flick_note_body_sprites = BodySpriteSet.of_normal(
-    left=BaseSkin.critical_flick_note_left,
-    middle=BaseSkin.critical_flick_note_middle,
-    right=BaseSkin.critical_flick_note_right,
-)
-flick_arrow_red_sprites = ArrowSpriteSet.of_normal(
-    up=BaseSkin.flick_arrow_red_up,
-)
-flick_arrow_red_fallback_sprites = ArrowSpriteSet.of_fallback(
-    fallback=BaseSkin.flick_arrow_red_fallback,
-)
-flick_arrow_yellow_sprites = ArrowSpriteSet.of_normal(
-    up=BaseSkin.flick_arrow_yellow_up,
-)
-flick_arrow_yellow_fallback_sprites = ArrowSpriteSet.of_fallback(
-    fallback=BaseSkin.flick_arrow_yellow_fallback,
+accent_note_fallback_body_sprites = BodySpriteSet.of_normal_fallback(
+    fallback=BaseSkin.note_accent_fallback,
 )
 flick_arrow_sprites = ArrowSpriteSet.of_normal(
-    up=BaseSkin.flick_arrow_up,
+    up=BaseSkin.flick_arrow_,
 )
-critical_flick_arrow_sprites = ArrowSpriteSet.of_normal(
-    up=BaseSkin.critical_flick_arrow_up,
+flick_arrow_fallback_sprites = ArrowSpriteSet.of_fallback(
+    fallback=BaseSkin.flick_arrow_fallback,
+)
+accent_flick_arrow_sprites = ArrowSpriteSet.of_normal(
+    up=BaseSkin.flick_arrow_accent,
+)
+accent_flick_arrow_fallback_sprites = ArrowSpriteSet.of_fallback(
+    fallback=BaseSkin.flick_arrow_accent_fallback,
 )
 
 damage_note_body_sprites = BodySpriteSet.of_normal(
@@ -500,28 +359,8 @@ damage_note_body_sprites = BodySpriteSet.of_normal(
     middle=BaseSkin.damage_note_middle,
     right=BaseSkin.damage_note_right,
 )
-
-active_slide_connector_green_sprites = ActiveConnectionSpriteSet.of_normal(
-    normal=BaseSkin.active_slide_connection_green_normal,
-    active=BaseSkin.active_slide_connection_green_active,
-)
-active_slide_connector_green_fallback_sprites = ActiveConnectionSpriteSet.of_fallback(
-    fallback=BaseSkin.active_slide_connection_green_fallback,
-)
-active_slide_connector_yellow_sprites = ActiveConnectionSpriteSet.of_normal(
-    normal=BaseSkin.active_slide_connection_yellow_normal,
-    active=BaseSkin.active_slide_connection_yellow_active,
-)
-active_slide_connector_yellow_fallback_sprites = ActiveConnectionSpriteSet.of_fallback(
-    fallback=BaseSkin.active_slide_connection_yellow_fallback,
-)
-normal_active_slide_connector_sprites = ActiveConnectionSpriteSet.of_normal(
-    normal=BaseSkin.normal_active_slide_connection_normal,
-    active=BaseSkin.normal_active_slide_connection_active,
-)
-critical_active_slide_connector_sprites = ActiveConnectionSpriteSet.of_normal(
-    normal=BaseSkin.critical_active_slide_connection_normal,
-    active=BaseSkin.critical_active_slide_connection_active,
+damage_note_fallback_body_sprites = BodySpriteSet.of_normal_fallback(
+    fallback=BaseSkin.damage_note_basic,
 )
 
 
@@ -550,13 +389,18 @@ class ActiveSkin:
     judgment_cyan: JudgmentSpriteSet
     judgment_black: JudgmentSpriteSet
 
-    sekai_stage: Sprite
+    holodori_stage: Sprite
+    holodori_stage_background: Sprite
+    holodori_stage_judgment_line: Sprite
 
     sim_line: Sprite
+    measure_line: Sprite
+    skill_activation_line: Sprite
 
     note_icon: Sprite
 
     normal_note: NoteSpriteSet
+    offbeat_note: NoteSpriteSet
     slide_note: NoteSpriteSet
     flick_note: NoteSpriteSet
     critical_note: NoteSpriteSet
@@ -582,9 +426,6 @@ class ActiveSkin:
     guide_neutral: Sprite
     guide_black: Sprite
 
-    damage_slide_connector: Sprite
-    damage_slide_connector_active: Sprite
-
     beat_line: Sprite
     preview_divider: Sprite
     bpm_change_line: Sprite
@@ -599,137 +440,96 @@ def init_skin():
     ActiveSkin.stage_left_border = BaseSkin.stage_left_border
     ActiveSkin.stage_right_border = BaseSkin.stage_right_border
 
-    ActiveSkin.sekai_stage = BaseSkin.sekai_stage
+    ActiveSkin.holodori_stage = BaseSkin.holodori_stage
+    ActiveSkin.holodori_stage_background = BaseSkin.holodori_stage_background
+    ActiveSkin.holodori_stage_judgment_line = BaseSkin.holodori_stage_judgment_line
 
     ActiveSkin.sim_line = BaseSkin.sim_line
+    ActiveSkin.measure_line = first_available_sprite(BaseSkin.measure_line, BaseSkin.sim_line)
+    ActiveSkin.skill_activation_line = first_available_sprite(BaseSkin.skill_activation_line, BaseSkin.sim_line)
 
     ActiveSkin.note_icon = BaseSkin.note_icon
 
     ActiveSkin.normal_note = NoteSpriteSet(
         body=first_available_body_sprite_set(
             normal_note_body_sprites,
-            note_cyan_body_sprites,
-            note_cyan_fallback_body_sprites,
+            normal_note_fallback_body_sprites,
         ),
         arrow=EMPTY_ARROW_SPRITE_SET,
         tick=EMPTY_SPRITE,
-        slot=first_available_sprite(
-            BaseSkin.slot_normal,
-            BaseSkin.slot_cyan,
+        slot=BaseSkin.slot_normal,
+        slot_glow=BaseSkin.slot_glow_normal,
+    )
+    ActiveSkin.offbeat_note = NoteSpriteSet(
+        body=first_available_body_sprite_set(
+            offbeat_note_body_sprites,
+            offbeat_note_fallback_body_sprites,
         ),
-        slot_glow=first_available_sprite(
-            BaseSkin.slot_glow_normal,
-            BaseSkin.slot_glow_cyan,
-        ),
+        arrow=EMPTY_ARROW_SPRITE_SET,
+        tick=EMPTY_SPRITE,
+        slot=BaseSkin.slot_normal,
+        slot_glow=BaseSkin.slot_glow_normal,
     )
     ActiveSkin.slide_note = NoteSpriteSet(
         body=first_available_body_sprite_set(
-            slide_note_body_sprites,
-            note_green_body_sprites,
-            note_green_fallback_body_sprites,
+            long_note_body_sprites,
+            long_note_fallback_body_sprites,
         ),
         arrow=EMPTY_ARROW_SPRITE_SET,
         tick=EMPTY_SPRITE,
-        slot=first_available_sprite(
-            BaseSkin.slot_slide,
-            BaseSkin.slot_green,
-        ),
-        slot_glow=first_available_sprite(
-            BaseSkin.slot_glow_slide,
-            BaseSkin.slot_glow_green,
-        ),
+        slot=BaseSkin.slot_slide,
+        slot_glow=BaseSkin.slot_glow_slide,
     )
     ActiveSkin.flick_note = NoteSpriteSet(
         body=first_available_body_sprite_set(
             flick_note_body_sprites,
-            note_red_body_sprites,
-            note_red_fallback_body_sprites,
+            flick_note_fallback_body_sprites,
         ),
         arrow=first_available_arrow_sprite_set(
             flick_arrow_sprites,
-            flick_arrow_red_sprites,
-            flick_arrow_red_fallback_sprites,
+            flick_arrow_fallback_sprites,
         ),
         tick=EMPTY_SPRITE,
-        slot=first_available_sprite(
-            BaseSkin.slot_flick,
-            BaseSkin.slot_red,
-        ),
-        slot_glow=first_available_sprite(
-            BaseSkin.slot_glow_flick,
-            BaseSkin.slot_glow_red,
-        ),
+        slot=BaseSkin.slot_flick,
+        slot_glow=BaseSkin.slot_glow_flick,
     )
     ActiveSkin.critical_note = NoteSpriteSet(
         body=first_available_body_sprite_set(
-            critical_note_body_sprites,
-            note_yellow_body_sprites,
-            note_yellow_fallback_body_sprites,
+            accent_note_body_sprites,
+            accent_note_fallback_body_sprites,
         ),
         arrow=EMPTY_ARROW_SPRITE_SET,
         tick=EMPTY_SPRITE,
-        slot=first_available_sprite(
-            BaseSkin.slot_critical,
-            BaseSkin.slot_yellow,
-        ),
-        slot_glow=first_available_sprite(
-            BaseSkin.slot_glow_critical,
-            BaseSkin.slot_glow_yellow,
-        ),
+        slot=BaseSkin.slot_accent,
+        slot_glow=BaseSkin.slot_glow_accent,
     )
     ActiveSkin.critical_slide_note = NoteSpriteSet(
         body=first_available_body_sprite_set(
-            critical_slide_note_body_sprites,
-            critical_note_body_sprites,
-            note_yellow_body_sprites,
-            note_yellow_fallback_body_sprites,
+            accent_note_body_sprites,
+            accent_note_fallback_body_sprites,
         ),
         arrow=EMPTY_ARROW_SPRITE_SET,
         tick=EMPTY_SPRITE,
-        slot=first_available_sprite(
-            BaseSkin.slot_critical_slide,
-            BaseSkin.slot_yellow_slider,
-            BaseSkin.slot_critical,
-            BaseSkin.slot_yellow,
-        ),
-        slot_glow=first_available_sprite(
-            BaseSkin.slot_glow_critical_slide,
-            BaseSkin.slot_glow_yellow_slider_tap,
-            BaseSkin.slot_glow_critical,
-            BaseSkin.slot_glow_yellow,
-        ),
+        slot=BaseSkin.slot_accent,
+        slot_glow=BaseSkin.slot_glow_accent,
     )
     ActiveSkin.critical_flick_note = NoteSpriteSet(
         body=first_available_body_sprite_set(
-            critical_flick_note_body_sprites,
-            critical_note_body_sprites,
-            note_yellow_body_sprites,
-            note_yellow_fallback_body_sprites,
+            accent_note_body_sprites,
+            accent_note_fallback_body_sprites,
         ),
         arrow=first_available_arrow_sprite_set(
-            critical_flick_arrow_sprites,
-            flick_arrow_yellow_sprites,
-            flick_arrow_yellow_fallback_sprites,
+            accent_flick_arrow_sprites,
+            accent_flick_arrow_fallback_sprites,
         ),
         tick=EMPTY_SPRITE,
-        slot=first_available_sprite(
-            BaseSkin.slot_critical_flick,
-            BaseSkin.slot_yellow_flick,
-            BaseSkin.slot_critical,
-            BaseSkin.slot_yellow,
-        ),
-        slot_glow=first_available_sprite(
-            BaseSkin.slot_glow_critical_flick,
-            BaseSkin.slot_glow_yellow_flick,
-            BaseSkin.slot_glow_critical,
-            BaseSkin.slot_glow_yellow,
-        ),
+        slot=BaseSkin.slot_accent,
+        slot_glow=BaseSkin.slot_glow_accent,
     )
     ActiveSkin.trace_note = NoteSpriteSet(
         body=first_available_body_sprite_set(
-            slide_note_body_sprites,
-            note_green_body_sprites,
-            note_green_fallback_body_sprites,
+            long_note_body_sprites,
+            long_note_fallback_body_sprites,
         ),
         arrow=EMPTY_ARROW_SPRITE_SET,
         tick=EMPTY_SPRITE,
@@ -738,13 +538,12 @@ def init_skin():
     )
     ActiveSkin.trace_flick_note = NoteSpriteSet(
         body=first_available_body_sprite_set(
-            note_red_body_sprites,
-            note_red_fallback_body_sprites,
+            flick_note_body_sprites,
+            flick_note_fallback_body_sprites,
         ),
         arrow=first_available_arrow_sprite_set(
             flick_arrow_sprites,
-            flick_arrow_red_sprites,
-            flick_arrow_red_fallback_sprites,
+            flick_arrow_fallback_sprites,
         ),
         tick=EMPTY_SPRITE,
         slot=EMPTY_SPRITE,
@@ -752,10 +551,8 @@ def init_skin():
     )
     ActiveSkin.critical_trace_note = NoteSpriteSet(
         body=first_available_body_sprite_set(
-            critical_slide_note_body_sprites,
-            critical_note_body_sprites,
-            note_yellow_body_sprites,
-            note_yellow_fallback_body_sprites,
+            accent_note_body_sprites,
+            accent_note_fallback_body_sprites,
         ),
         arrow=EMPTY_ARROW_SPRITE_SET,
         tick=EMPTY_SPRITE,
@@ -764,13 +561,12 @@ def init_skin():
     )
     ActiveSkin.critical_trace_flick_note = NoteSpriteSet(
         body=first_available_body_sprite_set(
-            note_yellow_body_sprites,
-            note_yellow_fallback_body_sprites,
+            accent_note_body_sprites,
+            accent_note_fallback_body_sprites,
         ),
         arrow=first_available_arrow_sprite_set(
-            critical_flick_arrow_sprites,
-            flick_arrow_yellow_sprites,
-            flick_arrow_yellow_fallback_sprites,
+            accent_flick_arrow_sprites,
+            accent_flick_arrow_fallback_sprites,
         ),
         tick=EMPTY_SPRITE,
         slot=EMPTY_SPRITE,
@@ -779,23 +575,19 @@ def init_skin():
     ActiveSkin.normal_slide_tick_note = NoteSpriteSet(
         body=EMPTY_BODY_SPRITE_SET,
         arrow=EMPTY_ARROW_SPRITE_SET,
-        tick=first_available_sprite(
-            BaseSkin.normal_slide_tick_note, BaseSkin.slide_tick_note_green, BaseSkin.slide_tick_note_green_fallback
-        ),
+        tick=first_available_sprite(BaseSkin.long_relay_note, BaseSkin.long_relay_note_fallback),
         slot=EMPTY_SPRITE,
         slot_glow=EMPTY_SPRITE,
     )
     ActiveSkin.critical_slide_tick_note = NoteSpriteSet(
         body=EMPTY_BODY_SPRITE_SET,
         arrow=EMPTY_ARROW_SPRITE_SET,
-        tick=first_available_sprite(
-            BaseSkin.critical_slide_tick_note, BaseSkin.slide_tick_note_yellow, BaseSkin.slide_tick_note_yellow_fallback
-        ),
+        tick=first_available_sprite(BaseSkin.long_accent_relay_note, BaseSkin.long_accent_relay_note_fallback),
         slot=EMPTY_SPRITE,
         slot_glow=EMPTY_SPRITE,
     )
     ActiveSkin.damage_note = NoteSpriteSet(
-        body=damage_note_body_sprites,
+        body=first_available_body_sprite_set(damage_note_body_sprites, damage_note_fallback_body_sprites),
         arrow=EMPTY_ARROW_SPRITE_SET,
         tick=EMPTY_SPRITE,
         slot=EMPTY_SPRITE,
@@ -803,30 +595,18 @@ def init_skin():
     )
 
     ActiveSkin.active_slide_connector = ActiveConnectorSpriteSet(
-        connection=first_available_active_connection_sprite_set(
-            normal_active_slide_connector_sprites,
-            active_slide_connector_green_sprites,
-            active_slide_connector_green_fallback_sprites,
+        connection=first_available_sprite(
+            BaseSkin.connection_long_normal,
+            BaseSkin.connection_long_normal_fallback,
         ),
-        slot_glow=first_available_sprite(
-            BaseSkin.normal_slide_connector_slot_glow,
-            BaseSkin.slot_glow_slide,
-            BaseSkin.slot_glow_green,
-        ),
+        slot_glow=BaseSkin.slot_glow_slide,
     )
     ActiveSkin.critical_active_slide_connector = ActiveConnectorSpriteSet(
-        connection=first_available_active_connection_sprite_set(
-            critical_active_slide_connector_sprites,
-            active_slide_connector_yellow_sprites,
-            active_slide_connector_yellow_fallback_sprites,
+        connection=first_available_sprite(
+            BaseSkin.connection_long_accent,
+            BaseSkin.connection_long_accent_fallback,
         ),
-        slot_glow=first_available_sprite(
-            BaseSkin.critical_slide_connector_slot_glow,
-            BaseSkin.slot_glow_critical_slide,
-            BaseSkin.slot_glow_yellow_slider_tap,
-            BaseSkin.slot_glow_critical,
-            BaseSkin.slot_glow_yellow,
-        ),
+        slot_glow=BaseSkin.slot_glow_accent,
     )
 
     ActiveSkin.guide_green = first_available_sprite(
@@ -842,8 +622,8 @@ def init_skin():
         BaseSkin.guide_red_fallback,
     )
     ActiveSkin.guide_purple = first_available_sprite(
-        BaseSkin.guide_purple,
-        BaseSkin.guide_purple_fallback,
+        BaseSkin.guide_magenta,
+        BaseSkin.guide_magenta_fallback,
     )
     ActiveSkin.guide_cyan = first_available_sprite(
         BaseSkin.guide_cyan,
@@ -860,16 +640,6 @@ def init_skin():
     ActiveSkin.guide_black = first_available_sprite(
         BaseSkin.guide_black,
         BaseSkin.guide_black_fallback,
-    )
-
-    ActiveSkin.damage_slide_connector = first_available_sprite(
-        BaseSkin.damage_slide_connection,
-        BaseSkin.damage_slide_connection_fallback,
-    )
-
-    ActiveSkin.damage_slide_connector_active = first_available_sprite(
-        BaseSkin.damage_slide_connection_active,
-        BaseSkin.damage_slide_connection_active_fallback,
     )
 
     ActiveSkin.beat_line = BaseSkin.beat_line

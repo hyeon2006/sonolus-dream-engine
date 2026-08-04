@@ -1,7 +1,7 @@
 from sonolus.script.interval import clamp, lerp, unlerp, unlerp_clamped
 
 from sekai.lib.layer import LAYER_SIM_LINE, get_z
-from sekai.lib.layout import AffineTransform2d, DynamicLayout, approach, get_alpha, layout_sim_line
+from sekai.lib.layout import AffineTransform2d, DynamicLayout, get_alpha, judgment_approach, layout_sim_line
 from sekai.lib.options import Options
 from sekai.lib.skin import ActiveSkin
 
@@ -38,8 +38,8 @@ def draw_sim_line(
     else:
         adj_left_lane = left_lane
         adj_right_lane = right_lane
-    adj_left_travel = approach(adj_left_progress)
-    adj_right_travel = approach(adj_right_progress)
+    adj_left_travel = judgment_approach(adj_left_progress)
+    adj_right_travel = judgment_approach(adj_right_progress)
     if abs(adj_left_lane - adj_right_lane) < 1e-6 and abs(adj_left_travel - adj_right_travel) < 1e-6:
         return
     layout = layout_sim_line(

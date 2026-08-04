@@ -21,6 +21,7 @@ from sekai.lib.note import (
     get_note_body_layer,
     get_note_sprite_set,
     is_critical,
+    is_offbeat,
     map_note_kind,
 )
 from sekai.lib.options import Options
@@ -113,7 +114,7 @@ class PreviewBaseNote(PreviewArchetype):
             return
         if not self.is_scored:
             return
-        draw_note(self.kind, self.lane, self.size, self.target_time)
+        draw_note(self.kind, self.beat, self.lane, self.size, self.target_time)
 
     @property
     def head_ease_frac(self) -> float:
@@ -147,10 +148,10 @@ class PreviewBaseNote(PreviewArchetype):
         return self._basic_visual_lane_at(t)
 
 
-def draw_note(kind: NoteKind, lane: float, size: float, target_time: float):
+def draw_note(kind: NoteKind, beat: float, lane: float, size: float, target_time: float):
     col = time_to_preview_col(target_time)
     y = time_to_preview_y(target_time, col)
-    sprite_set = get_note_sprite_set(kind)
+    sprite_set = get_note_sprite_set(kind, use_offbeat_skin=is_offbeat(beat))
     draw_note_body(sprite_set.body, kind, lane, size, target_time, col, y)
     draw_note_arrow(sprite_set.arrow, kind, lane, size, target_time, col, y)
     draw_note_tick(sprite_set.tick, lane, target_time, col, y)

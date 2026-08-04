@@ -7,112 +7,65 @@ from sonolus.script.record import Record
 class BaseParticles:
     lane: StandardParticle.LANE_LINEAR
 
-    normal_note_lane_linear: Particle = particle("Sekai Note Lane Linear")
-    normal_slide_note_lane_linear: Particle = particle("Sekai Slide Lane Linear")
-    normal_flick_note_lane_linear: Particle = particle("Sekai Flick Lane Linear")
-    critical_note_lane_linear: Particle = particle("Sekai Critical Lane Linear")
-    critical_slide_note_lane_linear: Particle = particle("Sekai Critical Slide Lane Linear")
-    critical_flick_note_lane_linear: Particle = particle("Sekai Critical Flick Lane Linear")
+    normal_note_lane_linear: Particle = particle("Holodori Note Lane Linear")
+    normal_slide_note_lane_linear: Particle = particle("Holodori Slide Lane Linear")
+    normal_flick_note_lane_linear: Particle = particle("Holodori Flick Lane Linear")
+    critical_note_lane_linear: Particle = particle("Holodori Critical Lane Linear")
+    critical_slide_note_lane_linear: Particle = particle("Holodori Critical Slide Lane Linear")
+    critical_flick_note_lane_linear: Particle = particle("Holodori Critical Flick Lane Linear")
 
-    note_circular_cyan: StandardParticle.NOTE_CIRCULAR_TAP_CYAN
-    note_linear_cyan: StandardParticle.NOTE_LINEAR_TAP_CYAN
-    note_slot_linear_cyan: Particle = particle("Sekai Slot Linear Tap Cyan")
+    normal_note_circular: Particle = particle("Holodori Normal Note Circular")
+    normal_note_linear: Particle = particle("Holodori Normal Note Linear")
+    slot_normal_linear: Particle = particle("Holodori Slot Normal Linear")
 
-    note_circular_green: StandardParticle.NOTE_CIRCULAR_TAP_GREEN
-    note_linear_green: StandardParticle.NOTE_LINEAR_TAP_GREEN
-    note_slot_linear_green: Particle = particle("Sekai Slot Linear Tap Green")
+    long_note_circular: Particle = particle("Holodori Long Note Circular")
+    long_note_linear: Particle = particle("Holodori Long Note Linear")
+    slot_long_linear: Particle = particle("Holodori Slot Long Linear")
 
-    note_circular_red: StandardParticle.NOTE_CIRCULAR_TAP_RED
-    note_linear_red: StandardParticle.NOTE_LINEAR_TAP_RED
-    note_slot_linear_alternative_red: Particle = particle("Sekai Slot Linear Alternative Red")
-    note_directional_red: StandardParticle.NOTE_LINEAR_ALTERNATIVE_RED
+    flick_note_circular: Particle = particle("Holodori Flick Note Circular")
+    flick_note_linear: Particle = particle("Holodori Flick Note Linear")
+    flick_note_directional: Particle = particle("Holodori Flick Note Directional")
+    slot_flick_linear: Particle = particle("Holodori Slot Flick Linear")
 
-    trace_note_circular_green: Particle = particle("Sekai Trace Note Circular Green")
-    trace_note_linear_green: Particle = particle("Sekai Trace Note Linear Green")
+    accent_note_circular: Particle = particle("Holodori Accent Note Circular")
+    accent_note_linear: Particle = particle("Holodori Accent Note Linear")
+    accent_note_directional: Particle = particle("Holodori Accent Note Directional")
+    slot_accent_linear: Particle = particle("Holodori Slot Accent Linear")
 
-    note_circular_yellow: StandardParticle.NOTE_CIRCULAR_TAP_YELLOW
-    note_linear_yellow: StandardParticle.NOTE_LINEAR_TAP_YELLOW
-    note_slot_linear_yellow: Particle = particle("Sekai Slot Linear Tap Yellow")
+    normal_relay: Particle = particle("Holodori Normal Relay")
+    accent_relay: Particle = particle("Holodori Accent Relay")
 
-    note_circular_slide_yellow: Particle = particle("Sekai Critical Slide Circular Yellow")
-    note_linear_slide_yellow: Particle = particle("Sekai Critical Slide Linear Yellow")
-    note_slot_linear_slide_yellow: Particle = particle("Sekai Slot Linear Slide Tap Yellow")
+    long_normal_circular: Particle = particle("Holodori Long Normal Circular")
+    long_normal_linear: Particle = particle("Holodori Long Normal Linear")
+    long_normal_trail_linear: Particle = particle("Holodori Long Normal Trail Linear")
+    long_normal_slot_linear: Particle = particle("Holodori Long Normal Slot Linear")
 
-    note_circular_flick_yellow: Particle = particle("Sekai Critical Flick Circular Yellow")
-    note_linear_flick_yellow: Particle = particle("Sekai Critical Flick Linear Yellow")
-    note_slot_linear_flick_yellow: Particle = particle("Sekai Slot Linear Alternative Yellow")
-    note_directional_yellow: StandardParticle.NOTE_LINEAR_ALTERNATIVE_YELLOW
+    long_accent_circular: Particle = particle("Holodori Long Accent Circular")
+    long_accent_linear: Particle = particle("Holodori Long Accent Linear")
+    long_accent_trail_linear: Particle = particle("Holodori Long Accent Trail Linear")
+    long_accent_slot_linear: Particle = particle("Holodori Long Accent Slot Linear")
 
-    trace_note_circular_yellow: Particle = particle("Sekai Trace Note Circular Yellow")
-    trace_note_linear_yellow: Particle = particle("Sekai Trace Note Linear Yellow")
+    damage_note_circular: Particle = particle("Holodori Damage Note Circular")
+    damage_note_linear: Particle = particle("Holodori Damage Note Linear")
 
-    slide_tick_note_circular_green: StandardParticle.NOTE_CIRCULAR_ALTERNATIVE_GREEN
-
-    slide_tick_note_circular_yellow: StandardParticle.NOTE_CIRCULAR_ALTERNATIVE_YELLOW
-
-    slide_connector_circular_green: StandardParticle.NOTE_CIRCULAR_HOLD_GREEN
-    slide_connector_linear_green: StandardParticle.NOTE_LINEAR_HOLD_GREEN
-    slide_connector_trail_linear_green: Particle = particle("Sekai Normal Slide Trail Linear")
-    slide_connector_slot_linear_green: Particle = particle("Sekai Slot Linear Slide Green")
-
-    slide_connector_circular_yellow: StandardParticle.NOTE_CIRCULAR_HOLD_YELLOW
-    slide_connector_linear_yellow: StandardParticle.NOTE_LINEAR_HOLD_YELLOW
-    slide_connector_trail_linear_yellow: Particle = particle("Sekai Critical Slide Trail Linear")
-    slide_connector_slot_linear_yellow: Particle = particle("Sekai Slot Linear Slide Yellow")
-
-    note_circular_purple: StandardParticle.NOTE_CIRCULAR_TAP_PURPLE
-    note_linear_purple: StandardParticle.NOTE_LINEAR_TAP_PURPLE
-
-    normal_note_circular: Particle = particle("Sekai Normal Note Circular")
-    normal_note_linear: Particle = particle("Sekai Normal Note Linear")
-    normal_note_slot_linear: Particle = particle("Sekai Normal Note Slot Linear")
-
-    slide_note_circular: Particle = particle("Sekai Slide Note Circular")
-    slide_note_linear: Particle = particle("Sekai Slide Note Linear")
-    slide_note_slot_linear: Particle = particle("Sekai Slide Note Slot Linear")
-
-    flick_note_circular: Particle = particle("Sekai Flick Note Circular")
-    flick_note_linear: Particle = particle("Sekai Flick Note Linear")
-    flick_note_slot_linear: Particle = particle("Sekai Flick Note Slot Linear")
-
-    flick_note_directional: Particle = particle("Sekai Flick Note Directional")
-
-    trace_note_circular: Particle = particle("Sekai Trace Note Circular")
-    trace_note_linear: Particle = particle("Sekai Trace Note Linear")
-
-    critical_note_circular: Particle = particle("Sekai Critical Note Circular")
-    critical_note_linear: Particle = particle("Sekai Critical Note Linear")
-    critical_note_slot_linear: Particle = particle("Sekai Critical Note Slot Linear")
-
-    critical_slide_note_circular: Particle = particle("Sekai Critical Slide Note Circular")
-    critical_slide_note_linear: Particle = particle("Sekai Critical Slide Note Linear")
-    critical_slide_note_slot_linear: Particle = particle("Sekai Critical Slide Note Slot Linear")
-
-    critical_flick_note_circular: Particle = particle("Sekai Critical Flick Note Circular")
-    critical_flick_note_linear: Particle = particle("Sekai Critical Flick Note Linear")
-    critical_flick_note_slot_linear: Particle = particle("Sekai Critical Flick Note Slot Linear")
-
-    critical_note_directional: Particle = particle("Sekai Critical Note Directional")
-
-    critical_trace_note_circular: Particle = particle("Sekai Critical Trace Note Circular")
-    critical_trace_note_linear: Particle = particle("Sekai Critical Trace Note Linear")
-
-    normal_slide_tick_note: Particle = particle("Sekai Normal Slide Tick Note")
-
-    critical_slide_tick_note: Particle = particle("Sekai Critical Slide Tick Note")
-
-    normal_slide_connector_circular: Particle = particle("Sekai Normal Slide Connector Circular")
-    normal_slide_connector_linear: Particle = particle("Sekai Normal Slide Connector Linear")
-    normal_slide_connector_trail_linear: Particle = particle("Sekai Normal Slide Connector Trail Linear")
-    normal_slide_connector_slot_linear: Particle = particle("Sekai Normal Slide Connector Slot Linear")
-
-    critical_slide_connector_circular: Particle = particle("Sekai Critical Slide Connector Circular")
-    critical_slide_connector_linear: Particle = particle("Sekai Critical Slide Connector Linear")
-    critical_slide_connector_trail_linear: Particle = particle("Sekai Critical Slide Connector Trail Linear")
-    critical_slide_connector_slot_linear: Particle = particle("Sekai Critical Slide Connector Slot Linear")
-
-    damage_note_circular: Particle = particle("Sekai Damage Note Circular")
-    damage_note_linear: Particle = particle("Sekai Damage Note Linear")
+    normal_note_circular_fallback: StandardParticle.NOTE_CIRCULAR_TAP_CYAN
+    normal_note_linear_fallback: StandardParticle.NOTE_LINEAR_TAP_CYAN
+    long_note_circular_fallback: StandardParticle.NOTE_CIRCULAR_TAP_GREEN
+    long_note_linear_fallback: StandardParticle.NOTE_LINEAR_TAP_GREEN
+    flick_note_circular_fallback: StandardParticle.NOTE_CIRCULAR_TAP_RED
+    flick_note_linear_fallback: StandardParticle.NOTE_LINEAR_TAP_RED
+    flick_note_directional_fallback: StandardParticle.NOTE_LINEAR_ALTERNATIVE_RED
+    accent_note_circular_fallback: StandardParticle.NOTE_CIRCULAR_TAP_YELLOW
+    accent_note_linear_fallback: StandardParticle.NOTE_LINEAR_TAP_YELLOW
+    accent_note_directional_fallback: StandardParticle.NOTE_LINEAR_ALTERNATIVE_YELLOW
+    normal_relay_fallback: StandardParticle.NOTE_CIRCULAR_ALTERNATIVE_GREEN
+    accent_relay_fallback: StandardParticle.NOTE_CIRCULAR_ALTERNATIVE_YELLOW
+    long_normal_circular_fallback: StandardParticle.NOTE_CIRCULAR_HOLD_GREEN
+    long_normal_linear_fallback: StandardParticle.NOTE_LINEAR_HOLD_GREEN
+    long_accent_circular_fallback: StandardParticle.NOTE_CIRCULAR_HOLD_YELLOW
+    long_accent_linear_fallback: StandardParticle.NOTE_LINEAR_HOLD_YELLOW
+    damage_note_circular_fallback: StandardParticle.NOTE_CIRCULAR_TAP_PURPLE
+    damage_note_linear_fallback: StandardParticle.NOTE_LINEAR_TAP_PURPLE
 
 
 EMPTY_PARTICLE = Particle(-1)
@@ -183,31 +136,26 @@ def init_particles():
     ActiveParticles.normal_note @= NoteParticleSet(
         circular=first_available_particle(
             BaseParticles.normal_note_circular,
-            BaseParticles.note_circular_cyan,
+            BaseParticles.normal_note_circular_fallback,
         ),
         linear=first_available_particle(
             BaseParticles.normal_note_linear,
-            BaseParticles.note_linear_cyan,
+            BaseParticles.normal_note_linear_fallback,
         ),
         directional=EMPTY_PARTICLE,
         tick=EMPTY_PARTICLE,
-        lane=first_available_particle(
-            BaseParticles.normal_note_lane_linear,
-        ),
+        lane=first_available_particle(BaseParticles.normal_note_lane_linear),
         lane_basic=BaseParticles.lane,
-        slot_linear=first_available_particle(
-            BaseParticles.normal_note_slot_linear,
-            BaseParticles.note_slot_linear_cyan,
-        ),
+        slot_linear=first_available_particle(BaseParticles.slot_normal_linear),
     )
     ActiveParticles.slide_note @= NoteParticleSet(
         circular=first_available_particle(
-            BaseParticles.slide_note_circular,
-            BaseParticles.note_circular_green,
+            BaseParticles.long_note_circular,
+            BaseParticles.long_note_circular_fallback,
         ),
         linear=first_available_particle(
-            BaseParticles.slide_note_linear,
-            BaseParticles.note_linear_green,
+            BaseParticles.long_note_linear,
+            BaseParticles.long_note_linear_fallback,
         ),
         directional=EMPTY_PARTICLE,
         tick=EMPTY_PARTICLE,
@@ -216,67 +164,49 @@ def init_particles():
             BaseParticles.normal_note_lane_linear,
         ),
         lane_basic=BaseParticles.lane,
-        slot_linear=first_available_particle(
-            BaseParticles.slide_note_slot_linear,
-            BaseParticles.note_slot_linear_green,
-        ),
+        slot_linear=first_available_particle(BaseParticles.slot_long_linear),
     )
     ActiveParticles.flick_note @= NoteParticleSet(
         circular=first_available_particle(
             BaseParticles.flick_note_circular,
-            BaseParticles.note_circular_red,
+            BaseParticles.flick_note_circular_fallback,
         ),
         linear=first_available_particle(
             BaseParticles.flick_note_linear,
-            BaseParticles.note_linear_red,
+            BaseParticles.flick_note_linear_fallback,
         ),
         directional=first_available_particle(
             BaseParticles.flick_note_directional,
-            BaseParticles.note_directional_red,
+            BaseParticles.flick_note_directional_fallback,
         ),
         tick=EMPTY_PARTICLE,
-        lane=first_available_particle(
-            # Disabled unless explicitly set, so no fallback
-            BaseParticles.normal_flick_note_lane_linear,
-        ),
+        lane=first_available_particle(BaseParticles.normal_flick_note_lane_linear),
         lane_basic=EMPTY_PARTICLE,
-        slot_linear=first_available_particle(
-            BaseParticles.flick_note_slot_linear,
-            BaseParticles.note_slot_linear_alternative_red,
-        ),
+        slot_linear=first_available_particle(BaseParticles.slot_flick_linear),
     )
     ActiveParticles.critical_note @= NoteParticleSet(
         circular=first_available_particle(
-            BaseParticles.critical_note_circular,
-            BaseParticles.note_circular_yellow,
+            BaseParticles.accent_note_circular,
+            BaseParticles.accent_note_circular_fallback,
         ),
         linear=first_available_particle(
-            BaseParticles.critical_note_linear,
-            BaseParticles.note_linear_yellow,
+            BaseParticles.accent_note_linear,
+            BaseParticles.accent_note_linear_fallback,
         ),
         directional=EMPTY_PARTICLE,
         tick=EMPTY_PARTICLE,
-        lane=first_available_particle(
-            BaseParticles.critical_note_lane_linear,
-        ),
+        lane=first_available_particle(BaseParticles.critical_note_lane_linear),
         lane_basic=BaseParticles.lane,
-        slot_linear=first_available_particle(
-            BaseParticles.critical_note_slot_linear,
-            BaseParticles.note_slot_linear_yellow,
-        ),
+        slot_linear=first_available_particle(BaseParticles.slot_accent_linear),
     )
     ActiveParticles.critical_slide_note @= NoteParticleSet(
         circular=first_available_particle(
-            BaseParticles.critical_slide_note_circular,
-            BaseParticles.note_circular_slide_yellow,
-            BaseParticles.critical_note_circular,
-            BaseParticles.note_circular_yellow,
+            BaseParticles.accent_note_circular,
+            BaseParticles.accent_note_circular_fallback,
         ),
         linear=first_available_particle(
-            BaseParticles.critical_slide_note_linear,
-            BaseParticles.note_linear_slide_yellow,
-            BaseParticles.critical_note_linear,
-            BaseParticles.note_linear_yellow,
+            BaseParticles.accent_note_linear,
+            BaseParticles.accent_note_linear_fallback,
         ),
         directional=EMPTY_PARTICLE,
         tick=EMPTY_PARTICLE,
@@ -285,52 +215,36 @@ def init_particles():
             BaseParticles.critical_note_lane_linear,
         ),
         lane_basic=BaseParticles.lane,
-        slot_linear=first_available_particle(
-            BaseParticles.critical_slide_note_slot_linear,
-            BaseParticles.note_slot_linear_slide_yellow,
-            BaseParticles.critical_note_slot_linear,
-            BaseParticles.note_slot_linear_yellow,
-        ),
+        slot_linear=first_available_particle(BaseParticles.slot_accent_linear),
     )
     ActiveParticles.critical_flick_note @= NoteParticleSet(
         circular=first_available_particle(
-            BaseParticles.critical_flick_note_circular,
-            BaseParticles.note_circular_flick_yellow,
-            BaseParticles.critical_note_circular,
-            BaseParticles.note_circular_yellow,
+            BaseParticles.accent_note_circular,
+            BaseParticles.accent_note_circular_fallback,
         ),
         linear=first_available_particle(
-            BaseParticles.critical_flick_note_linear,
-            BaseParticles.note_linear_flick_yellow,
-            BaseParticles.critical_note_linear,
-            BaseParticles.note_linear_yellow,
+            BaseParticles.accent_note_linear,
+            BaseParticles.accent_note_linear_fallback,
         ),
         directional=first_available_particle(
-            BaseParticles.critical_note_directional,
-            BaseParticles.note_directional_yellow,
+            BaseParticles.accent_note_directional,
+            BaseParticles.accent_note_directional_fallback,
         ),
         tick=EMPTY_PARTICLE,
-        lane=first_available_particle(
-            BaseParticles.critical_flick_note_lane_linear,
-        ),
+        lane=first_available_particle(BaseParticles.critical_flick_note_lane_linear),
         lane_basic=BaseParticles.lane,
-        slot_linear=first_available_particle(
-            BaseParticles.critical_flick_note_slot_linear,
-            BaseParticles.note_slot_linear_flick_yellow,
-            BaseParticles.critical_note_slot_linear,
-            BaseParticles.note_slot_linear_yellow,
-        ),
+        slot_linear=first_available_particle(BaseParticles.slot_accent_linear),
     )
     ActiveParticles.trace_note @= NoteParticleSet(
         circular=EMPTY_PARTICLE,
         linear=first_available_particle(
-            BaseParticles.trace_note_linear,
-            BaseParticles.trace_note_linear_green,
+            BaseParticles.long_note_linear,
+            BaseParticles.long_note_linear_fallback,
         ),
         directional=EMPTY_PARTICLE,
         tick=first_available_particle(
-            BaseParticles.trace_note_circular,
-            BaseParticles.trace_note_circular_green,
+            BaseParticles.long_note_circular,
+            BaseParticles.long_note_circular_fallback,
         ),
         lane=EMPTY_PARTICLE,
         lane_basic=EMPTY_PARTICLE,
@@ -341,25 +255,23 @@ def init_particles():
         linear=EMPTY_PARTICLE,
         directional=first_available_particle(
             BaseParticles.flick_note_directional,
-            BaseParticles.note_directional_red,
+            BaseParticles.flick_note_directional_fallback,
         ),
         tick=EMPTY_PARTICLE,
-        lane=first_available_particle(
-            BaseParticles.normal_flick_note_lane_linear,
-        ),
+        lane=first_available_particle(BaseParticles.normal_flick_note_lane_linear),
         lane_basic=EMPTY_PARTICLE,
         slot_linear=EMPTY_PARTICLE,
     )
     ActiveParticles.critical_trace_note @= NoteParticleSet(
         circular=EMPTY_PARTICLE,
         linear=first_available_particle(
-            BaseParticles.critical_trace_note_linear,
-            BaseParticles.trace_note_linear_yellow,
+            BaseParticles.accent_note_linear,
+            BaseParticles.accent_note_linear_fallback,
         ),
         directional=EMPTY_PARTICLE,
         tick=first_available_particle(
-            BaseParticles.critical_trace_note_circular,
-            BaseParticles.trace_note_circular_yellow,
+            BaseParticles.accent_note_circular,
+            BaseParticles.accent_note_circular_fallback,
         ),
         lane=EMPTY_PARTICLE,
         lane_basic=EMPTY_PARTICLE,
@@ -369,13 +281,11 @@ def init_particles():
         circular=EMPTY_PARTICLE,
         linear=EMPTY_PARTICLE,
         directional=first_available_particle(
-            BaseParticles.critical_note_directional,
-            BaseParticles.note_directional_yellow,
+            BaseParticles.accent_note_directional,
+            BaseParticles.accent_note_directional_fallback,
         ),
         tick=EMPTY_PARTICLE,
-        lane=first_available_particle(
-            BaseParticles.critical_flick_note_lane_linear,
-        ),
+        lane=first_available_particle(BaseParticles.critical_flick_note_lane_linear),
         lane_basic=EMPTY_PARTICLE,
         slot_linear=EMPTY_PARTICLE,
     )
@@ -384,8 +294,8 @@ def init_particles():
         linear=EMPTY_PARTICLE,
         directional=EMPTY_PARTICLE,
         tick=first_available_particle(
-            BaseParticles.normal_slide_tick_note,
-            BaseParticles.slide_tick_note_circular_green,
+            BaseParticles.normal_relay,
+            BaseParticles.normal_relay_fallback,
         ),
         lane=EMPTY_PARTICLE,
         lane_basic=EMPTY_PARTICLE,
@@ -396,8 +306,8 @@ def init_particles():
         linear=EMPTY_PARTICLE,
         directional=EMPTY_PARTICLE,
         tick=first_available_particle(
-            BaseParticles.critical_slide_tick_note,
-            BaseParticles.slide_tick_note_circular_yellow,
+            BaseParticles.accent_relay,
+            BaseParticles.accent_relay_fallback,
         ),
         lane=EMPTY_PARTICLE,
         lane_basic=EMPTY_PARTICLE,
@@ -406,9 +316,11 @@ def init_particles():
     ActiveParticles.damage_note @= NoteParticleSet(
         circular=first_available_particle(
             BaseParticles.damage_note_circular,
+            BaseParticles.damage_note_circular_fallback,
         ),
         linear=first_available_particle(
             BaseParticles.damage_note_linear,
+            BaseParticles.damage_note_linear_fallback,
         ),
         directional=EMPTY_PARTICLE,
         tick=EMPTY_PARTICLE,
@@ -419,36 +331,25 @@ def init_particles():
 
     ActiveParticles.normal_slide_connector @= ActiveConnectorParticleSet(
         circular=first_available_particle(
-            BaseParticles.normal_slide_connector_circular,
-            BaseParticles.slide_connector_circular_green,
+            BaseParticles.long_normal_circular,
+            BaseParticles.long_normal_circular_fallback,
         ),
         linear=first_available_particle(
-            BaseParticles.normal_slide_connector_linear,
-            BaseParticles.slide_connector_linear_green,
+            BaseParticles.long_normal_linear,
+            BaseParticles.long_normal_linear_fallback,
         ),
-        trail_linear=first_available_particle(
-            BaseParticles.normal_slide_connector_trail_linear,
-            BaseParticles.slide_connector_trail_linear_green,
-        ),
-        slot_linear=first_available_particle(
-            BaseParticles.normal_slide_connector_slot_linear,
-            BaseParticles.slide_connector_slot_linear_green,
-        ),
+        trail_linear=first_available_particle(BaseParticles.long_normal_trail_linear),
+        slot_linear=first_available_particle(BaseParticles.long_normal_slot_linear),
     )
     ActiveParticles.critical_slide_connector @= ActiveConnectorParticleSet(
         circular=first_available_particle(
-            BaseParticles.critical_slide_connector_circular,
-            BaseParticles.slide_connector_circular_yellow,
+            BaseParticles.long_accent_circular,
+            BaseParticles.long_accent_circular_fallback,
         ),
         linear=first_available_particle(
-            BaseParticles.critical_slide_connector_linear,
-            BaseParticles.slide_connector_linear_yellow,
+            BaseParticles.long_accent_linear,
+            BaseParticles.long_accent_linear_fallback,
         ),
-        trail_linear=first_available_particle(
-            BaseParticles.critical_slide_connector_trail_linear,
-            BaseParticles.slide_connector_trail_linear_yellow,
-        ),
-        slot_linear=first_available_particle(
-            BaseParticles.critical_slide_connector_slot_linear, BaseParticles.slide_connector_slot_linear_yellow
-        ),
+        trail_linear=first_available_particle(BaseParticles.long_accent_trail_linear),
+        slot_linear=first_available_particle(BaseParticles.long_accent_slot_linear),
     )

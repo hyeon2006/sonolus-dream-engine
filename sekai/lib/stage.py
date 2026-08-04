@@ -18,15 +18,13 @@ from sekai.lib.layout import (
     AffineTransform2d,
     DynamicLayout,
     Layout,
-    approach,
     current_stage_tilt,
-    layout_full_width_stage_cover,
-    layout_hidden_cover,
+    judgment_approach,
+    layout_fallback_judge_line,
+    layout_holodori_stage,
     layout_particle_lane,
-    layout_sekai_stage,
-    layout_stage_cover,
-    layout_stage_cover_and_line,
     layout_stage_lane_by_edges,
+    layout_visibility_line,
     perspective_rect,
     stage_aspect_ratio_locked,
     tilt_depth,
@@ -34,7 +32,7 @@ from sekai.lib.layout import (
     tilt_width_factor,
     transformed_vec_at,
 )
-from sekai.lib.options import Options, StageCoverMode
+from sekai.lib.options import Options
 from sekai.lib.particle import ActiveParticles
 from sekai.lib.skin import ActiveSkin, JudgmentSpriteSet
 
@@ -151,8 +149,8 @@ def normalize_transition[T](value: Transition[T] | T) -> Transition[T]:
 def draw_basic_stage():
     if not Options.show_lane:
         return
-    if ActiveSkin.sekai_stage.is_available:
-        draw_sekai_stage()
+    if ActiveSkin.holodori_stage.is_available:
+        draw_holodori_stage()
     else:
         draw_default_stage(
             lane=0,
@@ -167,9 +165,12 @@ def draw_basic_stage():
         )
 
 
-def draw_sekai_stage():
-    layout = layout_sekai_stage()
-    ActiveSkin.sekai_stage.draw(layout, z=get_z(LAYER_STAGE).tuple)
+def draw_holodori_stage():
+    stage_layout = layout_holodori_stage()
+    judgment_line_layout = layout_fallback_judge_line(judgment_approach(1))
+    ActiveSkin.holodori_stage_background.draw(stage_layout, z=get_z_alt(LAYER_STAGE, 0).tuple)
+    ActiveSkin.holodori_stage.draw(stage_layout, z=get_z_alt(LAYER_STAGE, 1).tuple)
+    ActiveSkin.holodori_stage_judgment_line.draw(judgment_line_layout, z=get_z_alt(LAYER_STAGE, 2).tuple)
 
 
 def get_judgment_sprites(judge_line_color: JudgeLineColor) -> JudgmentSpriteSet:
@@ -249,7 +250,7 @@ def draw_default_stage(
         )
         return
 
-    travel = approach(1 - y_offset)
+    travel = judgment_approach(1, y_offset)
     nh = DynamicLayout.note_h
     l = lane - width
     r = lane + width
@@ -588,7 +589,7 @@ def draw_fallback_stage(
     judge_line_style = normalize_transition(judge_line_style)
     w_default = judge_line_style_weight(judge_line_style, JudgeLineStyle.DEFAULT)
     w_single_line = judge_line_style_weight(judge_line_style, JudgeLineStyle.SINGLE_LINE)
-    travel = approach(1 - y_offset)
+    travel = judgment_approach(1, y_offset)
     nh = DynamicLayout.note_h
     l = lane - width
     r = lane + width
@@ -639,22 +640,11 @@ def draw_fallback_stage(
 
 def draw_stage_cover():
     if Options.stage_cover > 0:
-        match Options.stage_cover_mode:
-            case StageCoverMode.STAGE:
-                layout = layout_stage_cover()
-                ActiveSkin.cover.draw(layout, z=get_z(LAYER_COVER).tuple, a=Options.stage_cover_alpha)
-            case StageCoverMode.STAGE_AND_LINE:
-                cover_layout, line_layout = layout_stage_cover_and_line()
-                ActiveSkin.cover.draw(cover_layout, z=get_z(LAYER_COVER).tuple, a=Options.stage_cover_alpha)
-                ActiveSkin.guide_neutral.draw(line_layout, z=get_z(LAYER_COVER, etc=1).tuple, a=0.75)
-            case StageCoverMode.FULL_WIDTH:
-                layout = layout_full_width_stage_cover()
-                ActiveSkin.cover.draw(layout, z=get_z(LAYER_COVER).tuple, a=Options.stage_cover_alpha)
-            case _:
-                assert_never(Options.stage_cover_mode)
+        layout = layout_visibility_line(DynamicLayout.progress_start)
+        ActiveSkin.guide_neutral.draw(layout, z=get_z(LAYER_COVER).tuple)
     if Options.hidden > 0:
-        layout = layout_hidden_cover()
-        ActiveSkin.cover.draw(layout, z=get_z(LAYER_COVER).tuple, a=1)
+        layout = layout_visibility_line(DynamicLayout.progress_cutoff)
+        ActiveSkin.guide_neutral.draw(layout, z=get_z(LAYER_COVER).tuple)
 
 
 def play_lane_hit_effects(lane: float, sfx: bool = True, *, transform: AffineTransform2d):

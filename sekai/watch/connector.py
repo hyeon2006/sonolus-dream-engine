@@ -110,9 +110,6 @@ class WatchConnector(WatchArchetype):
             if self.active_head_ref.index > 0:
                 if is_replay():
                     visual_state = Streams.connector_visual_states[self.index].get_previous_inclusive(time())
-                elif self.kind == ConnectorKind.DAMAGE:
-                    # Autoplay never touches damage connectors.
-                    visual_state = ConnectorVisualState.WAITING
                 elif time() < self.active_head.target_time:
                     visual_state = ConnectorVisualState.WAITING
                 else:
@@ -230,8 +227,6 @@ class WatchConnector(WatchArchetype):
                             | ConnectorKind.GUIDE_PURPLE
                             | ConnectorKind.GUIDE_CYAN
                             | ConnectorKind.GUIDE_BLACK
-                            | ConnectorKind.DAMAGE
-                            | ConnectorKind.FAKE_DAMAGE
                         ):
                             pass
                         case _:
@@ -263,8 +258,6 @@ class WatchConnector(WatchArchetype):
                     | ConnectorKind.GUIDE_PURPLE
                     | ConnectorKind.GUIDE_CYAN
                     | ConnectorKind.GUIDE_BLACK
-                    | ConnectorKind.DAMAGE
-                    | ConnectorKind.FAKE_DAMAGE
                 ):
                     pass
                 case _:
@@ -392,7 +385,6 @@ class WatchSlideManager(WatchArchetype):
                 | ConnectorKind.ACTIVE_CRITICAL
                 | ConnectorKind.ACTIVE_FAKE_NORMAL
                 | ConnectorKind.ACTIVE_FAKE_CRITICAL
-                | ConnectorKind.DAMAGE
             ):
                 draw_slide_note_head(
                     self.active_head.kind,

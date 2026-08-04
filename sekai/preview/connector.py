@@ -13,7 +13,6 @@ from sekai.lib.connector import (
     get_connector_alpha_option,
     get_connector_quality_option,
     get_connector_z,
-    get_damage_connector_sprite,
     get_guide_blended_rgba_segment_count,
     get_guide_connector_sprite,
     is_guide_connector,
@@ -143,7 +142,7 @@ def draw_connector(
             | ConnectorKind.ACTIVE_FAKE_CRITICAL
         ):
             sprites = get_active_connector_sprites(kind)
-            normal_sprite @= sprites.connection.normal
+            normal_sprite @= sprites.connection
         case (
             ConnectorKind.GUIDE_GHOST
             | ConnectorKind.GUIDE_NEUTRAL
@@ -156,8 +155,6 @@ def draw_connector(
             | ConnectorKind.GUIDE_BLACK
         ):
             normal_sprite @= get_guide_connector_sprite(kind)
-        case ConnectorKind.DAMAGE | ConnectorKind.FAKE_DAMAGE:
-            normal_sprite @= get_damage_connector_sprite()
         case ConnectorKind.NONE:
             return
         case _:
@@ -180,8 +177,6 @@ def draw_connector(
             | ConnectorKind.GUIDE_PURPLE
             | ConnectorKind.GUIDE_CYAN
             | ConnectorKind.GUIDE_BLACK
-            | ConnectorKind.DAMAGE
-            | ConnectorKind.FAKE_DAMAGE
         ):
             pass
         case _:
@@ -305,7 +300,7 @@ def draw_connector(
         )
 
         for col in range(last_col, next_col + 1):
-            z = get_connector_z(kind, get_adjusted_time(segment_head_target_time, col), segment_head_lane, active=False)
+            z = get_connector_z(kind, get_adjusted_time(segment_head_target_time, col), segment_head_lane)
             start_y = time_to_preview_y(last_target_time, col)
             end_y = time_to_preview_y(next_target_time, col)
             for layout in layout_preview_slide_connector_segment(

@@ -11,11 +11,13 @@ from sonolus.script.archetype import (
 from sonolus.script.runtime import time
 
 from sekai.lib import archetype_names
+from sekai.lib.layout import preempt_time
 from sekai.lib.timescale import (
     CompositeTime,
     ScaledTimeToFirstTime,
     TimeToLastChangeIndex,
     TimeToScaledTime,
+    register_timescale_group,
 )
 
 
@@ -47,6 +49,8 @@ class TimescaleGroup(PlayArchetype):
     last_change: EntityRef[TimescaleChange] = shared_memory()
     hide_notes: bool = shared_memory()
     last_updated: float = shared_memory()
+    note_preempt_time: float = shared_memory()
+    is_identity: bool = shared_memory()
 
     time_to_scaled_time: TimeToScaledTime = shared_memory()
     time_to_last_change_index: TimeToLastChangeIndex = shared_memory()
@@ -61,10 +65,18 @@ class TimescaleGroup(PlayArchetype):
 
     @callback(order=-2)
     def preprocess(self):
+        register_timescale_group(self.index)
         self.time_to_scaled_time.init(self.first_ref.index)
         self.time_to_last_change_index.init(self.first_ref.index)
         self.scaled_time_to_first_time.init(self.first_ref.index)
         self.scaled_time_to_first_time_2.init(self.first_ref.index)
+        self.note_preempt_time = preempt_time(self.force_note_speed)
+        self.is_identity = False
+        if self.first_ref.index > 0:
+            first = self.first_ref.get()
+            self.is_identity = (
+                abs(first.timescale - 1) <= 1e-6 and abs(first.timescale_skip) <= 1e-6 and first.next_ref.index <= 0
+            )
         self.last_updated = -1e8
 
     def update(self):

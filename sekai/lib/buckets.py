@@ -93,27 +93,27 @@ def create_bucket_sprites(
 class Buckets:
     # Normal buckets
     normal_tap: Bucket = bucket(
-        sprites=create_bucket_sprites(body=BaseSkin.normal_note_basic, body_fallback=BaseSkin.note_cyan_fallback),
+        sprites=create_bucket_sprites(body=BaseSkin.note_normal_middle, body_fallback=BaseSkin.note_normal_fallback),
         unit=StandardText.MILLISECOND_UNIT,
     )
     critical_tap: Bucket = bucket(
-        sprites=create_bucket_sprites(body=BaseSkin.critical_note_basic, body_fallback=BaseSkin.note_yellow_fallback),
+        sprites=create_bucket_sprites(body=BaseSkin.note_accent_middle, body_fallback=BaseSkin.note_accent_fallback),
         unit=StandardText.MILLISECOND_UNIT,
     )
 
     normal_trace_flick: Bucket = bucket(
         sprites=create_bucket_sprites(
-            body=BaseSkin.note_red_middle,
-            body_fallback=BaseSkin.note_red_fallback,
-            arrow=BaseSkin.flick_arrow_red_fallback,
+            body=BaseSkin.note_flick_middle,
+            body_fallback=BaseSkin.note_flick_fallback,
+            arrow=BaseSkin.flick_arrow_fallback,
         ),
         unit=StandardText.MILLISECOND_UNIT,
     )
     critical_trace_flick: Bucket = bucket(
         sprites=create_bucket_sprites(
-            body=BaseSkin.note_yellow_middle,
-            body_fallback=BaseSkin.note_yellow_fallback,
-            arrow=BaseSkin.flick_arrow_yellow_fallback,
+            body=BaseSkin.note_accent_middle,
+            body_fallback=BaseSkin.note_accent_fallback,
+            arrow=BaseSkin.flick_arrow_accent_fallback,
         ),
         unit=StandardText.MILLISECOND_UNIT,
     )
@@ -121,20 +121,20 @@ class Buckets:
     # Head buckets
     normal_head_tap: Bucket = bucket(
         sprites=create_bucket_sprites(
-            connector=BaseSkin.normal_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_green_fallback,
-            body=BaseSkin.slide_note_basic,
-            body_fallback=BaseSkin.note_green_fallback,
+            connector=BaseSkin.connection_long_normal,
+            connector_fallback=BaseSkin.connection_long_normal_fallback,
+            body=BaseSkin.note_long_middle,
+            body_fallback=BaseSkin.note_long_fallback,
             body_pos="left",
         ),
         unit=StandardText.MILLISECOND_UNIT,
     )
     critical_head_tap: Bucket = bucket(
         sprites=create_bucket_sprites(
-            connector=BaseSkin.critical_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_yellow_fallback,
-            body=BaseSkin.critical_note_basic,
-            body_fallback=BaseSkin.note_yellow_fallback,
+            connector=BaseSkin.connection_long_accent,
+            connector_fallback=BaseSkin.connection_long_accent_fallback,
+            body=BaseSkin.note_accent_middle,
+            body_fallback=BaseSkin.note_accent_fallback,
             body_pos="left",
         ),
         unit=StandardText.MILLISECOND_UNIT,
@@ -143,42 +143,42 @@ class Buckets:
     # Tail buckets
     normal_tail_flick: Bucket = bucket(
         sprites=create_bucket_sprites(
-            connector=BaseSkin.normal_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_green_fallback,
-            body=BaseSkin.flick_note_basic,
-            body_fallback=BaseSkin.note_red_fallback,
+            connector=BaseSkin.connection_long_normal,
+            connector_fallback=BaseSkin.connection_long_normal_fallback,
+            body=BaseSkin.note_flick_middle,
+            body_fallback=BaseSkin.note_flick_fallback,
             body_pos="right",
-            arrow=BaseSkin.flick_arrow_red_fallback,
+            arrow=BaseSkin.flick_arrow_fallback,
         ),
         unit=StandardText.MILLISECOND_UNIT,
     )
     critical_tail_flick: Bucket = bucket(
         sprites=create_bucket_sprites(
-            connector=BaseSkin.critical_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_yellow_fallback,
-            body=BaseSkin.critical_flick_note_basic,
-            body_fallback=BaseSkin.note_yellow_fallback,
+            connector=BaseSkin.connection_long_accent,
+            connector_fallback=BaseSkin.connection_long_accent_fallback,
+            body=BaseSkin.note_accent_middle,
+            body_fallback=BaseSkin.note_accent_fallback,
             body_pos="right",
-            arrow=BaseSkin.flick_arrow_yellow_fallback,
+            arrow=BaseSkin.flick_arrow_accent_fallback,
         ),
         unit=StandardText.MILLISECOND_UNIT,
     )
     normal_tail_trace: Bucket = bucket(
         sprites=create_bucket_sprites(
-            connector=BaseSkin.normal_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_green_fallback,
-            body=BaseSkin.slide_note_basic,
-            body_fallback=BaseSkin.note_green_fallback,
+            connector=BaseSkin.connection_long_normal,
+            connector_fallback=BaseSkin.connection_long_normal_fallback,
+            body=BaseSkin.note_long_middle,
+            body_fallback=BaseSkin.note_long_fallback,
             body_pos="right",
         ),
         unit=StandardText.MILLISECOND_UNIT,
     )
     critical_tail_trace: Bucket = bucket(
         sprites=create_bucket_sprites(
-            connector=BaseSkin.critical_active_slide_connection_normal,
-            connector_fallback=BaseSkin.active_slide_connection_yellow_fallback,
-            body=BaseSkin.critical_note_basic,
-            body_fallback=BaseSkin.note_yellow_fallback,
+            connector=BaseSkin.connection_long_accent,
+            connector_fallback=BaseSkin.connection_long_accent_fallback,
+            body=BaseSkin.note_accent_middle,
+            body_fallback=BaseSkin.note_accent_fallback,
             body_pos="right",
         ),
         unit=StandardText.MILLISECOND_UNIT,

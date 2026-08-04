@@ -256,6 +256,7 @@ class QueuedTutorialNoteDraw(Record):
     def act(self):
         draw_note(
             kind=self.note.kind,
+            beat=0.0,
             lane=self.note.lane,
             size=self.note.size,
             visual_progress=self.progress + self.note.offset,

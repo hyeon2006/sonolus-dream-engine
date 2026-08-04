@@ -12,7 +12,7 @@ from sonolus.script.record import Record
 from sonolus.script.runtime import aspect_ratio, background, is_play, is_watch, screen, set_background
 from sonolus.script.vec import Vec2
 
-from sekai.lib.options import Options, StageCoverNoteSpeedCompensation
+from sekai.lib.options import Options
 from sekai.lib.timescale import CompositeTime
 
 LANE_T = 47 / 850
@@ -31,7 +31,16 @@ FIELD_B_FACTOR = 0.5 - 1.15875 * (803 / 1176)
 FIELD_W_FACTOR = (1.15875 * (1420 / 1176)) / TARGET_ASPECT_RATIO / 12
 
 # Value between 0 and 1 where smaller values mean a 'harsher' approach with more acceleration.
-APPROACH_SCALE = 1.06**-45
+APPROACH_SCALE = 1.07**-45
+
+NOTE_REFERENCE_SCALE = 1.06**-45
+NOTE_REFERENCE_TIME = 0.39
+NOTE_SPEED_5_TO_12_RATIO = 8.75
+
+STAGE_COVER_DEPTH_STEP = 0.009
+HIDDEN_DEPTH_STEP = 0.01
+
+VISIBILITY_LINE_HALF_HEIGHT = 0.001
 
 # Value above 1 where we cut off drawing sprites. Doesn't really matter as long as it's high enough,
 # such that something like a flick arrow below the judge line isn't obviously suddenly cut off.
@@ -60,9 +69,10 @@ class Layout:
     field_w: float
     field_h: float
     approach_start: float
-    cover_depth: float
-    cutoff_depth: float
+    cover_progress: float
+    cutoff_progress: float
     flick_speed_threshold: float
+    judgment_line_y_offset: float
 
 
 @level_memory
@@ -124,6 +134,31 @@ def stage_aspect_ratio_locked() -> bool:
     return Options.lock_stage_aspect_ratio
 
 
+def stage_cover_progress(value: float) -> float:
+    if value <= 0:
+        return 0.0
+    depth = LANE_T + STAGE_COVER_DEPTH_STEP * value
+    # Cancel the judgment-line shift that judgment_approach() applies at draw time, so the
+    # boundary stays at this absolute depth regardless of the judgment line position.
+    return inverse_approach_curve_base(depth) + Layout.judgment_line_y_offset
+
+
+def hidden_progress(value: float) -> float:
+    depth = max(1 - HIDDEN_DEPTH_STEP * value, APPROACH_SCALE)
+    # Cancel the judgment-line shift, as in stage_cover_progress().
+    return inverse_approach_curve_base(depth) + Layout.judgment_line_y_offset
+
+
+def note_efold_time(note_speed: float) -> float:
+    tau_12 = NOTE_REFERENCE_TIME / log(1 / NOTE_REFERENCE_SCALE)
+    return tau_12 * NOTE_SPEED_5_TO_12_RATIO ** ((12 - clamp(note_speed, 1, 12)) / 7)
+
+
+def configured_judgment_line_y_offset() -> float:
+    depth = 1 - Options.judgment_line_position * HIDDEN_DEPTH_STEP / 2
+    return 1 - inverse_approach_curve_base(depth)
+
+
 def init_layout():
     if stage_aspect_ratio_locked():
         if aspect_ratio() > TARGET_ASPECT_RATIO:
@@ -140,23 +175,10 @@ def init_layout():
     Layout.field_h = field_h
 
     Layout.approach_start = 0.0
+    Layout.judgment_line_y_offset = configured_judgment_line_y_offset()
 
-    # Fixed approach-curve depths for the cover/spawn and far cutoff boundaries. These are
-    # tilt-independent (they pin screen positions); refresh_layout() converts them to the
-    # equivalent progress bounds under the current tilt each frame.
-    if Options.stage_cover:
-        Layout.cover_depth = lerp(APPROACH_SCALE, 1.0, Options.stage_cover)
-    else:
-        Layout.cover_depth = APPROACH_SCALE
-    if Options.hidden:
-        Layout.cutoff_depth = lerp(1.0, APPROACH_SCALE, Options.hidden)
-    else:
-        Layout.cutoff_depth = DEFAULT_APPROACH_CUTOFF
-
-    if Options.stage_cover and Options.stage_cover_scroll_speed_compensation != StageCoverNoteSpeedCompensation.OFF:
-        target_travel = lerp(APPROACH_SCALE, 1.0, Options.stage_cover)
-        candidate = inverse_approach_untilted(target_travel)
-        Layout.approach_start = clamp(candidate, 0, 0.99)
+    Layout.cover_progress = stage_cover_progress(Options.stage_cover)
+    Layout.cutoff_progress = hidden_progress(Options.hidden) if Options.hidden else DEFAULT_APPROACH_CUTOFF
 
     refresh_layout()
 
@@ -199,11 +221,8 @@ def refresh_layout():
 
     DynamicLayout.scaled_note_h = DynamicLayout.note_h * DynamicLayout.h_scale
 
-    if Options.stage_cover:
-        DynamicLayout.progress_start = inverse_approach_tilt(Layout.cover_depth)
-    else:
-        DynamicLayout.progress_start = inverse_approach_tilt(Layout.cover_depth - vanish_ext)
-    DynamicLayout.progress_cutoff = inverse_approach_tilt(Layout.cutoff_depth)
+    DynamicLayout.progress_start = Layout.cover_progress
+    DynamicLayout.progress_cutoff = Layout.cutoff_progress
 
 
 def current_stage_tilt() -> float:
@@ -273,6 +292,18 @@ def approach(progress: float) -> float:
     return approach_at_tilt(progress, current_stage_tilt())
 
 
+def judgment_approach_at_tilt(progress: float, tilt: float, y_offset: float = 0.0) -> float:
+    return approach_at_tilt(progress - y_offset - Layout.judgment_line_y_offset, tilt)
+
+
+def judgment_approach(progress: float, y_offset: float = 0.0) -> float:
+    return judgment_approach_at_tilt(progress, current_stage_tilt(), y_offset)
+
+
+def judgment_progress_at_travel(travel: float, y_offset: float = 0.0) -> float:
+    return inverse_approach_tilt(travel) + y_offset + Layout.judgment_line_y_offset
+
+
 def inverse_approach_untilted(approach_value: float) -> float:
     return unlerp(Layout.approach_start, 1.0, inverse_approach_curve_base(approach_value))
 
@@ -297,25 +328,20 @@ def inverse_approach_tilt(approach_value: float) -> float:
 def progress_to(
     to_time: float | CompositeTime,
     now: float | CompositeTime,
-    force_speed: float = 0,
+    preempt: float,
 ) -> float:
-    p = preempt_time(force_speed)
     match (to_time, now):
         case (CompositeTime(), CompositeTime()):
-            return ((now.base - to_time.base) + now.delta - to_time.delta + p) / p
+            return ((now.base - to_time.base) + now.delta - to_time.delta + preempt) / preempt
         case (Num(), Num()):
-            return unlerp(to_time - p, to_time, now)
+            return unlerp(to_time - preempt, to_time, now)
         case _:
             static_error("Unexpected types for progress_to")
 
 
 def preempt_time(force_speed: float = 0) -> float:
-    if force_speed > 0:
-        return lerp(0.35, 4, unlerp(12, 1, force_speed) ** 1.31)
-    raw = lerp(0.35, 4, unlerp(12, 1, Options.note_speed) ** 1.31)
-    if Options.stage_cover_scroll_speed_compensation == StageCoverNoteSpeedCompensation.FIXED_ONLY:
-        return raw * (1 - Layout.approach_start)
-    return raw
+    note_speed = force_speed if force_speed > 0 else Options.note_speed
+    return note_efold_time(note_speed) * log(1 / APPROACH_SCALE)
 
 
 def get_alpha(target_time: float, now: float | None = None) -> float:
@@ -394,7 +420,7 @@ def perspective_rect(l: float, r: float, t: float, b: float, travel: float = 1.0
     )
 
 
-def layout_sekai_stage() -> Quad:
+def layout_holodori_stage() -> Quad:
     w = (2048 / 1420) * 12 / 2
     h = 1176 / 850
     rect = Rect(l=-w, r=w, t=LANE_T, b=LANE_T + h)
@@ -409,62 +435,17 @@ def layout_stage_lane_by_edges(l: float, r: float, y_offset: float = 0.0) -> Qua
 
 def layout_particle_lane(lane: float, size: float, y_offset: float = 0.0) -> Quad:
     return perspective_rect(
-        l=lane - size, r=lane + size, t=DynamicLayout.lane_t, b=DynamicLayout.lane_b, travel=approach(1 - y_offset)
-    )
-
-
-def layout_stage_cover(l: float = -6, r: float = 6) -> Quad:
-    b = lerp(APPROACH_SCALE, 1.0, Options.stage_cover)
-    return perspective_rect(
-        l=l,
-        r=r,
+        l=lane - size,
+        r=lane + size,
         t=DynamicLayout.lane_t,
-        b=b,
+        b=DynamicLayout.lane_b,
+        travel=judgment_approach(1, y_offset),
     )
 
 
-def layout_stage_cover_and_line(l: float = -6, r: float = 6) -> tuple[Quad, Quad]:
-    b = lerp(APPROACH_SCALE, 1.0, Options.stage_cover)
-    cover_b = b + 0.002
-    return perspective_rect(
-        l=l,
-        r=r,
-        t=DynamicLayout.lane_t,
-        b=cover_b,
-    ), perspective_rect(
-        l=l,
-        r=r,
-        t=cover_b,
-        b=b,
-    )
-
-
-def layout_full_width_stage_cover() -> Quad:
-    pre_b = lerp(APPROACH_SCALE, 1.0, Options.stage_cover) * DynamicLayout.h_scale + DynamicLayout.t
-    big = 20.0
-    rot = -DynamicLayout.rotate
-    return Quad(
-        bl=Vec2(-big, pre_b).rotate(rot),
-        br=Vec2(big, pre_b).rotate(rot),
-        tl=Vec2(-big, big).rotate(rot),
-        tr=Vec2(big, big).rotate(rot),
-    )
-
-
-def layout_hidden_cover(l: float = -6, r: float = 6) -> Quad:
-    b = 1 - DynamicLayout.note_h
-    t = min(b, max(lerp(1.0, APPROACH_SCALE, Options.hidden), lerp(APPROACH_SCALE, 1.0, Options.stage_cover)))
-    return perspective_rect(
-        l=l,
-        r=r,
-        t=t,
-        b=b,
-    )
-
-
-def layout_fallback_judge_line() -> Quad:
+def layout_fallback_judge_line(travel: float = 1.0) -> Quad:
     nh = DynamicLayout.note_h
-    return perspective_rect(l=-6, r=6, t=1 - nh, b=1 + nh)
+    return perspective_rect(l=-6, r=6, t=1 - nh, b=1 + nh, travel=travel)
 
 
 def layout_note_body_by_edges(l: float, r: float, h: float, travel: float):
@@ -557,9 +538,8 @@ def layout_flick_arrow(lane: float, size: float, travel: float) -> Quad:
     up = (base_br - base_bl).rotate(pi / 2)
     base_tl = base_bl + up
     base_tr = base_br + up
-    offset = (
-        Vec2(0, FLICK_ARROW_Y_OFFSET * DynamicLayout.w_scale).rotate(-DynamicLayout.rotate)
-        * tilt_width_factor(travel)
+    offset = Vec2(0, FLICK_ARROW_Y_OFFSET * DynamicLayout.w_scale).rotate(-DynamicLayout.rotate) * tilt_width_factor(
+        travel
     )
     return Quad(
         bl=base_bl,
@@ -584,7 +564,7 @@ def layout_flick_arrow_fallback(lane: float, size: float, travel: float) -> Quad
 
 
 def layout_slot_effect(lane: float, y_offset: float = 0.0) -> Quad:
-    travel = approach(1 - y_offset)
+    travel = judgment_approach(1, y_offset)
     nh = DynamicLayout.note_h
     return perspective_rect(
         l=lane - 0.5,
@@ -597,7 +577,7 @@ def layout_slot_effect(lane: float, y_offset: float = 0.0) -> Quad:
 
 def layout_slot_glow_effect(lane: float, size: float, height: float, y_offset: float = 0.0) -> Quad:
     s = 1 + 0.25 * Options.slot_effect_size
-    travel = approach(1 - y_offset)
+    travel = judgment_approach(1, y_offset)
     h = 4.25 * DynamicLayout.w_scale * Options.slot_effect_size * tilt_width_factor(travel)
     up = Vec2(0, h).rotate(-DynamicLayout.rotate)
     l_min = transformed_vec_at(lane - size, travel)
@@ -614,7 +594,7 @@ def layout_slot_glow_effect(lane: float, size: float, height: float, y_offset: f
 
 def layout_linear_effect(lane: float, shear: float, y_offset: float = 0.0) -> Quad:
     w = Options.note_effect_size
-    travel = approach(1 - y_offset)
+    travel = judgment_approach(1, y_offset)
     bl = transformed_vec_at(lane - w, travel)
     br = transformed_vec_at(lane + w, travel)
     up = (br - bl).rotate(pi / 2) + (shear + 0.125 * lane) * (br - bl) / 2
@@ -628,7 +608,7 @@ def layout_linear_effect(lane: float, shear: float, y_offset: float = 0.0) -> Qu
 
 def layout_rotated_linear_effect(lane: float, shear: float, y_offset: float = 0.0) -> Quad:
     w = Options.note_effect_size
-    travel = approach(1 - y_offset)
+    travel = judgment_approach(1, y_offset)
     bl = transformed_vec_at(lane - w, travel)
     br = transformed_vec_at(lane + w, travel)
     up = (br - bl).orthogonal()
@@ -641,7 +621,7 @@ def layout_rotated_linear_effect(lane: float, shear: float, y_offset: float = 0.
 
 
 def layout_circular_effect(lane: float, w: float, h: float, y_offset: float = 0.0) -> Quad:
-    travel = approach(1 - y_offset)
+    travel = judgment_approach(1, y_offset)
     width = tilt_width_factor(travel)
     w *= Options.note_effect_size * width
     h *= Options.note_effect_size * DynamicLayout.w_scale / DynamicLayout.h_scale
@@ -660,7 +640,7 @@ def layout_circular_effect(lane: float, w: float, h: float, y_offset: float = 0.
 
 
 def layout_tick_effect(lane: float, y_offset: float = 0.0) -> Quad:
-    travel = approach(1 - y_offset)
+    travel = judgment_approach(1, y_offset)
     w = 4 * DynamicLayout.w_scale * Options.note_effect_size * tilt_width_factor(travel)
     center = transformed_vec_at(lane, travel)
     rot = -DynamicLayout.rotate
@@ -753,6 +733,23 @@ def layout_sim_line(
     )
 
 
+def layout_perspective_line(l: float, r: float, travel: float, half_height: float) -> Quad:
+    depth_t = travel - half_height
+    depth_b = travel + half_height
+    return transform_quad(
+        Quad(
+            bl=Vec2(l * tilt_width_factor(depth_b), depth_b),
+            br=Vec2(r * tilt_width_factor(depth_b), depth_b),
+            tl=Vec2(l * tilt_width_factor(depth_t), depth_t),
+            tr=Vec2(r * tilt_width_factor(depth_t), depth_t),
+        )
+    )
+
+
+def layout_visibility_line(progress: float) -> Quad:
+    return layout_perspective_line(-6.5, 6.5, judgment_approach(progress), VISIBILITY_LINE_HALF_HEIGHT)
+
+
 class HitboxTarget(Record):
     l: Vec2
     r: Vec2
@@ -828,7 +825,7 @@ def compute_hitbox(
     y_offset: float = 0.0,
 ) -> Hitbox:
     tilt = transform.stage_tilt
-    travel = approach_at_tilt(1 - y_offset, tilt)
+    travel = judgment_approach_at_tilt(1, tilt, y_offset)
     width_factor = width_factor_at_tilt(travel, tilt)
     l_x = (lane - size) * width_factor * transform.w_scale + transform.x_translate
     r_x = (lane + size) * width_factor * transform.w_scale + transform.x_translate

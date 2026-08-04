@@ -6,12 +6,34 @@ from typing import Protocol, assert_never, cast
 
 from sonolus.script import runtime
 from sonolus.script.archetype import EntityRef, get_archetype_by_name
+from sonolus.script.globals import level_data
 from sonolus.script.interval import remap
 from sonolus.script.record import Record
 from sonolus.script.timing import TimescaleEase, beat_to_bpm, beat_to_time
 
 from sekai.lib import archetype_names
 from sekai.lib.options import Options
+
+
+@level_data
+class TimescaleData:
+    first_group: int
+
+
+def register_timescale_group(group: int) -> None:
+    if TimescaleData.first_group == 0:
+        TimescaleData.first_group = group
+    else:
+        TimescaleData.first_group = min(TimescaleData.first_group, group)
+
+
+def resolve_timescale_group(group: int | EntityRef) -> int:
+    if isinstance(group, EntityRef):
+        group = group.index
+    if group > 0:
+        return group
+    return TimescaleData.first_group
+
 
 MIN_START_TIME = -2.0
 
@@ -49,6 +71,8 @@ class TimescaleGroupLike(Protocol):
     current_scaled_time: CompositeTime
     hide_notes: bool
     force_note_speed: float
+    note_preempt_time: float
+    is_identity: bool
 
     @classmethod
     def at(cls, index: int) -> TimescaleGroupLike: ...
@@ -294,6 +318,18 @@ def group_force_note_speed(group: int | EntityRef) -> float:
     if group <= 0:
         return 0.0
     return timescale_group_archetype().at(group).force_note_speed
+
+
+def group_preempt_time(group: int | EntityRef) -> float:
+    group = resolve_timescale_group(group)
+    return timescale_group_archetype().at(group).note_preempt_time
+
+
+def group_is_identity(group: int | EntityRef) -> bool:
+    if Options.disable_timescale:
+        return True
+    group = resolve_timescale_group(group)
+    return timescale_group_archetype().at(group).is_identity
 
 
 def iter_timescale_changes_in_group_from_time(

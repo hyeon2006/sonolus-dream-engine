@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from enum import IntEnum, auto
-from typing import Literal, assert_never, cast
+from typing import assert_never, cast
 
 from sonolus.script.archetype import EntityRef, HapticType, PlayArchetype, WatchArchetype, get_archetype_by_name
 from sonolus.script.bucket import Bucket, Judgment
@@ -39,9 +39,9 @@ from sekai.lib.layout import (
     AffineTransform2d,
     DynamicLayout,
     Hitbox,
-    approach,
     get_alpha,
     iter_slot_lanes,
+    judgment_approach,
     layout_circular_effect,
     layout_flick_arrow,
     layout_flick_arrow_fallback,
@@ -55,7 +55,6 @@ from sekai.lib.layout import (
     layout_slim_note_body_fallback,
     layout_tick,
     layout_tick_effect,
-    preempt_time,
     progress_to,
 )
 from sekai.lib.options import Options, VibrateMode
@@ -81,7 +80,7 @@ from sekai.lib.slot_effect import (
 )
 from sekai.lib.timescale import (
     CompositeTime,
-    group_force_note_speed,
+    group_preempt_time,
     group_scaled_time_to_first_time,
     group_scaled_time_to_first_time_2,
 )
@@ -191,14 +190,16 @@ def map_note_kind(kind: NoteKind) -> NoteKind:
 def get_visual_spawn_time(
     timescale_group: int | EntityRef,
     target_scaled_time: CompositeTime | float,
+    spawn_window_scale: float = 3,
 ):
     if isinstance(target_scaled_time, CompositeTime):
         target_scaled_time = target_scaled_time.total
-    force_speed = group_force_note_speed(timescale_group)
+    preempt = group_preempt_time(timescale_group)
+    spawn_window = preempt * spawn_window_scale
     return min(
-        group_scaled_time_to_first_time(timescale_group, target_scaled_time - preempt_time(force_speed) * 3),
-        group_scaled_time_to_first_time_2(timescale_group, target_scaled_time + preempt_time(force_speed) * 3),
-        -2 if -3 <= progress_to(target_scaled_time, -2, force_speed) <= 6 else 1e8,
+        group_scaled_time_to_first_time(timescale_group, target_scaled_time - spawn_window),
+        group_scaled_time_to_first_time_2(timescale_group, target_scaled_time + spawn_window),
+        -2 if -3 <= progress_to(target_scaled_time, -2, preempt) <= 6 else 1e8,
     )
 
 
@@ -224,6 +225,7 @@ def get_attach_params(
 
 def draw_note(
     kind: NoteKind,
+    beat: float,
     lane: float,
     size: float,
     visual_progress: float,
@@ -235,8 +237,8 @@ def draw_note(
         return
     if note_alpha <= 0:
         return
-    travel = approach(visual_progress)
-    sprite_set = get_note_sprite_set(kind)
+    travel = judgment_approach(visual_progress)
+    sprite_set = get_note_sprite_set(kind, use_offbeat_skin=is_offbeat(beat))
     draw_note_body(sprite_set.body, kind, lane, size, travel, target_time, transform, note_alpha)
     draw_note_arrow(sprite_set.arrow, kind, lane, size, travel, target_time, transform, note_alpha)
     draw_note_tick(sprite_set.tick, lane, travel, target_time, transform, note_alpha)
@@ -245,7 +247,7 @@ def draw_note(
 
 def draw_slide_note_head(
     kind: NoteKind,
-    connector_kind: ActiveConnectorKind | Literal[ConnectorKind.DAMAGE],
+    connector_kind: ActiveConnectorKind,
     lane: float,
     size: float,
     target_time: float,
@@ -263,11 +265,9 @@ def draw_slide_note_head(
             kind = note_kind_as_normal(kind)
         case ConnectorKind.ACTIVE_CRITICAL | ConnectorKind.ACTIVE_FAKE_CRITICAL:
             kind = note_kind_as_critical(kind)
-        case ConnectorKind.DAMAGE:
-            pass  # Keep kind as is
         case _:
             assert_never(connector_kind)
-    travel = approach(visual_progress)
+    travel = judgment_approach(visual_progress)
     sprite_set = get_note_sprite_set(kind)
     draw_note_body(sprite_set.body, kind, lane, size, travel, target_time, transform, note_alpha)
     draw_note_tick(sprite_set.tick, lane, travel, target_time, transform, note_alpha)
@@ -310,11 +310,18 @@ def note_kind_as_critical(kind: NoteKind) -> NoteKind:
             return kind
 
 
-def get_note_sprite_set(kind: NoteKind) -> NoteSpriteSet:
+def is_offbeat(beat: float) -> bool:
+    return abs(beat - round(beat)) > 1e-6
+
+
+def get_note_sprite_set(kind: NoteKind, *, use_offbeat_skin: bool = False) -> NoteSpriteSet:
     result = +NoteSpriteSet
     match kind:
         case NoteKind.NORM_TAP:
-            result @= ActiveSkin.normal_note
+            if use_offbeat_skin:
+                result @= ActiveSkin.offbeat_note
+            else:
+                result @= ActiveSkin.normal_note
         case NoteKind.CRIT_TAP:
             result @= ActiveSkin.critical_note
         case NoteKind.NORM_TAIL_FLICK:
@@ -503,16 +510,16 @@ def get_note_effect(kind: NoteKind, judgment: Judgment):
                 case Judgment.PERFECT:
                     result @= Effects.flick_perfect
                 case Judgment.GREAT:
-                    result @= Effects.flick_great
+                    result @= Effects.flick_perfect
                 case Judgment.GOOD:
-                    result @= Effects.flick_good
+                    result @= Effects.flick_perfect
                 case Judgment.MISS:
                     result @= EMPTY_EFFECT
                 case _:
                     assert_never(judgment)
         case NoteKind.NORM_TAIL_TRACE:
             if judgment != Judgment.MISS:
-                result @= first_available_effect(Effects.normal_trace, Effects.normal_perfect)
+                result @= Effects.normal_perfect
             else:
                 result @= EMPTY_EFFECT
         case NoteKind.NORM_TICK:
@@ -532,7 +539,7 @@ def get_note_effect(kind: NoteKind, judgment: Judgment):
                 result @= EMPTY_EFFECT
         case NoteKind.CRIT_TAIL_TRACE:
             if judgment != Judgment.MISS:
-                result @= first_available_effect(Effects.critical_trace, Effects.normal_perfect)
+                result @= first_available_effect(Effects.critical_tap, Effects.normal_perfect)
             else:
                 result @= EMPTY_EFFECT
         case NoteKind.CRIT_TICK:

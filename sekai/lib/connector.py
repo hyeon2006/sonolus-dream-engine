@@ -3,7 +3,6 @@ from math import ceil, cos, pi
 from typing import Literal, assert_never
 
 from sonolus.script.archetype import EntityRef
-from sonolus.script.easing import ease_out_cubic
 from sonolus.script.effect import Effect, LoopedEffectHandle
 from sonolus.script.interval import clamp, lerp, remap_clamped, unlerp_clamped
 from sonolus.script.particle import Particle, ParticleHandle
@@ -15,7 +14,7 @@ from sonolus.script.timing import beat_to_time
 
 from sekai.lib.buckets import SLIDE_TICK_JUDGMENT_WINDOW
 from sekai.lib.ease import EaseType, ease
-from sekai.lib.effect import Effects
+from sekai.lib.effect import Effects, first_available_effect
 from sekai.lib.layer import (
     LAYER_ACTIVE_SLIDE_CONNECTOR,
     LAYER_GUIDE_CONNECTOR,
@@ -26,9 +25,10 @@ from sekai.lib.layer import (
 from sekai.lib.layout import (
     AffineTransform2d,
     DynamicLayout,
-    approach,
     get_alpha,
     iter_slot_lanes,
+    judgment_approach,
+    judgment_progress_at_travel,
     layout_circular_effect,
     layout_linear_effect,
     layout_slide_connector_segment,
@@ -43,6 +43,17 @@ from sekai.lib.timescale import iter_timescale_changes_in_group_from_time
 CONNECTOR_TRAIL_SPAWN_PERIOD = 0.1
 CONNECTOR_SLOT_SPAWN_PERIOD = 0.2
 CONNECTOR_THROUGH_JUDGE_LINE_DESPAWN_DELAY = 5.0
+
+# Travel grows exponentially below the judgment line (about 2e5 by the default progress
+# cutoff), so screen-distance-based segment heuristics must not see raw travel values or
+# segment counts explode once a connector's head passes the judgment line. Caps travel at
+# roughly the bottom edge of the screen; subdividing beyond it has no visible effect.
+SEGMENT_HEURISTIC_MAX_TRAVEL = 2.5
+
+# Farthest travel any connector segment is drawn at. Must cover everything that can be on
+# screen (bottom edge is ~1.25-1.85 depending on layout; 4 leaves margin for stage
+# rotation), while keeping segments from being spent on the far-below-screen slide-out.
+CONNECTOR_MAX_DRAW_TRAVEL = 4.0
 CONNECTOR_LENIENCY = 1
 GUIDE_CONNECTOR_BLEND_PATH_SAMPLES = 8
 GUIDE_CONNECTOR_BLEND_PATH_SEGMENTS = 128
@@ -53,10 +64,8 @@ class ConnectorKind(IntEnum):
 
     ACTIVE_NORMAL = 1
     ACTIVE_CRITICAL = 2
-    DAMAGE = 3
     ACTIVE_FAKE_NORMAL = 51
     ACTIVE_FAKE_CRITICAL = 52
-    FAKE_DAMAGE = 53
 
     # Use GUIDE_GHOST with explicit RGB values by default unless a predefined
     # guide palette kind is required for a specific compatibility reason.
@@ -105,10 +114,6 @@ class ConnectorVisualState(IntEnum):
 
 def is_fake_active_connector(kind: ConnectorKind) -> bool:
     return kind in {ConnectorKind.ACTIVE_FAKE_NORMAL, ConnectorKind.ACTIVE_FAKE_CRITICAL}
-
-
-def is_fake_connector(kind: ConnectorKind) -> bool:
-    return is_fake_active_connector(kind) or kind == ConnectorKind.FAKE_DAMAGE
 
 
 def is_guide_connector(kind: ConnectorKind) -> bool:
@@ -164,15 +169,7 @@ def resolve_guide_connector_color(
 
 
 def should_show_connector_hitbox(kind: ConnectorKind) -> bool:
-    # DAMAGE is input-tracked but excluded: its region is already visualized by the tick
-    # hitboxes, which follow the head and would coincide with a connector-level overlay.
     return kind in {ConnectorKind.ACTIVE_NORMAL, ConnectorKind.ACTIVE_CRITICAL}
-
-
-def get_connector_input_leniency(kind: ConnectorKind) -> float:
-    if kind == ConnectorKind.DAMAGE:
-        return 0.0
-    return CONNECTOR_LENIENCY
 
 
 def get_active_connector_sprites(kind: ActiveConnectorKind) -> ActiveConnectorSpriteSet:
@@ -211,19 +208,7 @@ def get_guide_connector_sprite(kind: GuideConnectorKind) -> Sprite:
     return result
 
 
-def get_damage_connector_sprite() -> Sprite:
-    result = +Sprite
-    result @= ActiveSkin.damage_slide_connector
-    return result
-
-
-def get_damage_connector_active_sprite() -> Sprite:
-    result = +Sprite
-    result @= ActiveSkin.damage_slide_connector_active
-    return result
-
-
-def get_connector_z(kind: ConnectorKind, target_time: float, lane: float, active: bool) -> ZIndexes:
+def get_connector_z(kind: ConnectorKind, target_time: float, lane: float) -> ZIndexes:
     result = +ZIndexes
     match kind:
         case (
@@ -236,7 +221,7 @@ def get_connector_z(kind: ConnectorKind, target_time: float, lane: float, active
                 LAYER_ACTIVE_SLIDE_CONNECTOR,
                 time=target_time,
                 lane=lane,
-                etc=get_active_connector_z_offset(kind, active),
+                etc=get_active_connector_z_offset(kind),
                 invert_time=True,
             )
         case (
@@ -257,14 +242,6 @@ def get_connector_z(kind: ConnectorKind, target_time: float, lane: float, active
                 etc=0 if kind == ConnectorKind.GUIDE_GHOST else kind - ConnectorKind.GUIDE_NEUTRAL,
                 invert_time=True,
             )
-        case ConnectorKind.DAMAGE | ConnectorKind.FAKE_DAMAGE:
-            result @= get_z(
-                LAYER_GUIDE_CONNECTOR,
-                time=target_time,
-                lane=lane,
-                etc=get_active_connector_z_offset(kind, active),
-                invert_time=True,
-            )
         case ConnectorKind.NONE:
             pass
         case _:
@@ -272,16 +249,12 @@ def get_connector_z(kind: ConnectorKind, target_time: float, lane: float, active
     return result
 
 
-def get_active_connector_z_offset(
-    kind: ActiveConnectorKind | Literal[ConnectorKind.DAMAGE, ConnectorKind.FAKE_DAMAGE], active: bool
-) -> int:
+def get_active_connector_z_offset(kind: ActiveConnectorKind) -> int:
     match kind:
         case ConnectorKind.ACTIVE_NORMAL | ConnectorKind.ACTIVE_FAKE_NORMAL:
-            return 3 - active
+            return 3
         case ConnectorKind.ACTIVE_CRITICAL | ConnectorKind.ACTIVE_FAKE_CRITICAL:
-            return 1 - active
-        case ConnectorKind.DAMAGE | ConnectorKind.FAKE_DAMAGE:
-            return 9 - active
+            return 1
         case _:
             assert_never(kind)
 
@@ -294,8 +267,6 @@ def get_connector_alpha_option(kind: ConnectorKind) -> float:
             | ConnectorKind.ACTIVE_CRITICAL
             | ConnectorKind.ACTIVE_FAKE_CRITICAL
         ):
-            return Options.slide_alpha
-        case ConnectorKind.DAMAGE | ConnectorKind.FAKE_DAMAGE:
             return Options.slide_alpha
         case (
             ConnectorKind.GUIDE_GHOST
@@ -323,8 +294,6 @@ def get_connector_quality_option(kind: ConnectorKind) -> float:
             | ConnectorKind.ACTIVE_CRITICAL
             | ConnectorKind.ACTIVE_FAKE_CRITICAL
         ):
-            return Options.slide_quality
-        case ConnectorKind.DAMAGE | ConnectorKind.FAKE_DAMAGE:
             return Options.slide_quality
         case (
             ConnectorKind.GUIDE_GHOST
@@ -380,7 +349,7 @@ def draw_connector(
     ):
         return
 
-    if Options.disable_fake_notes and is_fake_connector(kind):
+    if Options.disable_fake_notes and is_fake_active_connector(kind):
         return
 
     if ease_type == EaseType.NONE:
@@ -401,7 +370,6 @@ def draw_connector(
     )
 
     normal_sprite = Sprite(-1)
-    active_sprite = Sprite(-1)
     match kind:
         case (
             ConnectorKind.ACTIVE_NORMAL
@@ -410,8 +378,7 @@ def draw_connector(
             | ConnectorKind.ACTIVE_FAKE_CRITICAL
         ):
             sprites = get_active_connector_sprites(kind)
-            normal_sprite @= sprites.connection.normal
-            active_sprite @= sprites.connection.active
+            normal_sprite @= sprites.connection
         case (
             ConnectorKind.GUIDE_GHOST
             | ConnectorKind.GUIDE_NEUTRAL
@@ -425,11 +392,6 @@ def draw_connector(
         ):
             sprites = get_guide_connector_sprite(kind)
             normal_sprite @= sprites
-        case ConnectorKind.DAMAGE:
-            normal_sprite @= get_damage_connector_sprite()
-            active_sprite @= get_damage_connector_active_sprite()
-        case ConnectorKind.FAKE_DAMAGE:
-            normal_sprite @= get_damage_connector_sprite()
         case ConnectorKind.NONE:
             return
         case _:
@@ -454,11 +416,8 @@ def draw_connector(
             | ConnectorKind.GUIDE_PURPLE
             | ConnectorKind.GUIDE_CYAN
             | ConnectorKind.GUIDE_BLACK
-            | ConnectorKind.FAKE_DAMAGE
         ):
             visual_state = ConnectorVisualState.WAITING
-        case ConnectorKind.DAMAGE:
-            pass
         case _:
             assert_never(kind)
 
@@ -514,21 +473,14 @@ def draw_connector(
     if time() >= tail_target_time and not is_guide_connector(kind):
         return
 
-    z_normal = get_connector_z(kind, segment_head_target_time, segment_head_lane, active=False)
-    z_active = +ZIndexes
-    if visual_state == ConnectorVisualState.ACTIVE and active_sprite.is_available:
-        z_active @= get_connector_z(kind, segment_head_target_time, segment_head_lane, active=True)
-    else:
-        z_active @= z_normal
+    z = get_connector_z(kind, segment_head_target_time, segment_head_lane)
 
     draw_connector_default(
         kind=kind,
         visual_state=visual_state,
         ease_type=ease_type,
         normal_sprite=normal_sprite,
-        active_sprite=active_sprite,
-        z_normal=z_normal,
-        z_active=z_active,
+        z=z,
         head_lane=head_lane,
         head_size=head_size,
         head_visual_progress=head_visual_progress,
@@ -555,9 +507,7 @@ def draw_connector_default(
     visual_state: ConnectorVisualState,
     ease_type: EaseType,
     normal_sprite: Sprite,
-    active_sprite: Sprite,
-    z_normal: ZIndexes,
-    z_active: ZIndexes,
+    z: ZIndexes,
     head_lane: float,
     head_size: float,
     head_visual_progress: float,
@@ -578,8 +528,12 @@ def draw_connector_default(
     tail_alpha: float,
 ):
     is_guide = is_guide_connector(kind)
-    start_visual_progress = clamp(head_visual_progress, DynamicLayout.progress_start, DynamicLayout.progress_cutoff)
-    end_visual_progress = clamp(tail_visual_progress, DynamicLayout.progress_start, DynamicLayout.progress_cutoff)
+    max_draw_progress = min(
+        DynamicLayout.progress_cutoff,
+        judgment_progress_at_travel(CONNECTOR_MAX_DRAW_TRAVEL),
+    )
+    start_visual_progress = clamp(head_visual_progress, DynamicLayout.progress_start, max_draw_progress)
+    end_visual_progress = clamp(tail_visual_progress, DynamicLayout.progress_start, max_draw_progress)
     start_frac = unlerp_clamped(head_visual_progress, tail_visual_progress, start_visual_progress)
     end_frac = unlerp_clamped(head_visual_progress, tail_visual_progress, end_visual_progress)
     start_ease_frac = lerp(head_ease_frac, tail_ease_frac, start_frac)
@@ -588,8 +542,8 @@ def draw_connector_default(
     eased_tail_ease_frac = ease(ease_type, tail_ease_frac)
     start_interp_frac = unlerp_clamped(eased_head_ease_frac, eased_tail_ease_frac, ease(ease_type, start_ease_frac))
     end_interp_frac = unlerp_clamped(eased_head_ease_frac, eased_tail_ease_frac, ease(ease_type, end_ease_frac))
-    start_travel = approach(start_visual_progress)
-    end_travel = approach(end_visual_progress)
+    start_travel = judgment_approach(start_visual_progress)
+    end_travel = judgment_approach(end_visual_progress)
     start_lane = lerp(head_lane, tail_lane, start_interp_frac)
     end_lane = lerp(head_lane, tail_lane, end_interp_frac)
     start_size = max(1e-3, lerp(head_size, tail_size, start_interp_frac))  # Lightweight rendering needs >0 size.
@@ -597,14 +551,20 @@ def draw_connector_default(
     start_red = 0.0
     start_green = 0.0
     start_blue = 0.0
+    end_red = 0.0
+    end_green = 0.0
+    end_blue = 0.0
     if is_guide:
         start_red = lerp(head_red, tail_red, start_frac)
         start_green = lerp(head_green, tail_green, start_frac)
         start_blue = lerp(head_blue, tail_blue, start_frac)
+        end_red = lerp(head_red, tail_red, end_frac)
+        end_green = lerp(head_green, tail_green, end_frac)
+        end_blue = lerp(head_blue, tail_blue, end_frac)
     start_alpha = lerp(head_alpha, tail_alpha, start_frac)
     end_alpha = lerp(head_alpha, tail_alpha, end_frac)
-    start_pos_y = pre_rotation_vec_at(start_lane, start_travel).y
-    end_pos_y = pre_rotation_vec_at(end_lane, end_travel).y
+    start_pos_y = pre_rotation_vec_at(start_lane, min(start_travel, SEGMENT_HEURISTIC_MAX_TRAVEL)).y
+    end_pos_y = pre_rotation_vec_at(end_lane, min(end_travel, SEGMENT_HEURISTIC_MAX_TRAVEL)).y
 
     match ease_type:
         case EaseType.NONE:
@@ -648,7 +608,7 @@ def draw_connector_default(
                 ease_frac = lerp(start_ease_frac, end_ease_frac, r)
                 interp_frac = unlerp_clamped(eased_head_ease_frac, eased_tail_ease_frac, ease(ease_type, ease_frac))
                 visual_progress = lerp(start_visual_progress, end_visual_progress, r)
-                travel = approach(visual_progress)
+                travel = judgment_approach(visual_progress)
                 lane = lerp(ref_head_lane, ref_tail_lane, interp_frac)
                 pos = pre_rotation_vec_at(lane, travel)
                 ref_pos = lerp(start_ref, end_ref, unlerp_clamped(start_travel, end_travel, travel))
@@ -664,15 +624,19 @@ def draw_connector_default(
     )
     rgba_segment_count = 0.0
     if is_guide:
-        rgba_segment_count = get_guide_blended_rgba_segment_count(
-            head_red,
-            head_green,
-            head_blue,
-            head_alpha,
-            tail_red,
-            tail_green,
-            tail_blue,
-            tail_alpha,
+        # Budget segments for the drawn sub-range only, not the full head-to-tail gradient,
+        # scaled by the range's on-screen extent: bands narrower than a pixel can't show
+        # banding, so a perspective-compressed range needs proportionally fewer segments.
+        screen_span_scale = min(1.0, abs(start_pos_y - end_pos_y) / 2)
+        rgba_segment_count = screen_span_scale * get_guide_blended_rgba_segment_count(
+            start_red,
+            start_green,
+            start_blue,
+            start_alpha,
+            end_red,
+            end_green,
+            end_blue,
+            end_alpha,
             get_connector_alpha_option(kind),
         )
     quality = get_connector_quality_option(kind)
@@ -698,7 +662,7 @@ def draw_connector_default(
         next_ease_frac = lerp(start_ease_frac, end_ease_frac, segment_frac)
         next_interp_frac = unlerp_clamped(eased_head_ease_frac, eased_tail_ease_frac, ease(ease_type, next_ease_frac))
         next_visual_progress = lerp(start_visual_progress, end_visual_progress, segment_frac)
-        next_travel = approach(next_visual_progress)
+        next_travel = judgment_approach(next_visual_progress)
         next_lane = lerp(head_lane, tail_lane, next_interp_frac)
         next_size = max(1e-3, lerp(head_size, tail_size, next_interp_frac))
         next_red = 0.0
@@ -732,14 +696,14 @@ def draw_connector_default(
         if is_guide:
             draw_guide_connector_quad(
                 layout,
-                z_normal,
+                z,
                 (last_red + next_red) / 2,
                 (last_green + next_green) / 2,
                 (last_blue + next_blue) / 2,
                 base_a,
             )
         else:
-            draw_connector_quad(layout, visual_state, normal_sprite, active_sprite, z_normal, z_active, base_a)
+            draw_connector_quad(layout, visual_state, normal_sprite, z, base_a)
 
         last_travel = next_travel
         last_lane = next_lane
@@ -867,23 +831,11 @@ def draw_guide_connector_color_layer(
 def draw_connector_quad(
     layout: QuadLike,
     visual_state: ConnectorVisualState,
-    normal_sprite: Sprite,
-    active_sprite: Sprite,
-    z_normal: ZIndexes,
-    z_active: ZIndexes,
+    sprite: Sprite,
+    z: ZIndexes,
     base_a: float,
 ):
-    if visual_state == ConnectorVisualState.ACTIVE and active_sprite.is_available:
-        if Options.connector_animation:
-            a_modifier = (cos(2 * pi * time()) + 1) / 2
-            normal_sprite.draw(layout, z=z_normal.tuple, a=base_a * ease_out_cubic(a_modifier))
-            active_sprite.draw(layout, z=z_active.tuple, a=base_a * ease_out_cubic(1 - a_modifier))
-        else:
-            active_sprite.draw(layout, z=z_active.tuple, a=base_a)
-    else:
-        normal_sprite.draw(
-            layout, z=z_normal.tuple, a=base_a * (1 if visual_state != ConnectorVisualState.INACTIVE else 0.5)
-        )
+    sprite.draw(layout, z=z.tuple, a=base_a * (1 if visual_state != ConnectorVisualState.INACTIVE else 0.5))
 
 
 class ActiveConnectorInfo(Record):
@@ -1028,7 +980,7 @@ def update_connector_sfx(
         case ConnectorKind.ACTIVE_NORMAL | ConnectorKind.ACTIVE_FAKE_NORMAL:
             effect @= Effects.normal_hold
         case ConnectorKind.ACTIVE_CRITICAL | ConnectorKind.ACTIVE_FAKE_CRITICAL:
-            effect @= Effects.critical_hold
+            effect @= first_available_effect(Effects.critical_hold, Effects.normal_hold)
         case _:
             assert_never(kind)
     if replace:
@@ -1050,7 +1002,7 @@ def schedule_connector_sfx(
         case ConnectorKind.ACTIVE_NORMAL | ConnectorKind.ACTIVE_FAKE_NORMAL:
             effect @= Effects.normal_hold
         case ConnectorKind.ACTIVE_CRITICAL | ConnectorKind.ACTIVE_FAKE_CRITICAL:
-            effect @= Effects.critical_hold
+            effect @= first_available_effect(Effects.critical_hold, Effects.normal_hold)
         case _:
             assert_never(kind)
     last_start_time = start_time

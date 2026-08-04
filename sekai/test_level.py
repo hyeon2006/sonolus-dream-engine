@@ -14,6 +14,8 @@ tap_notes = [
     LevelNote(beat=4.0, lane=3.0, size=1.5, kind=NoteKind.CRIT_TAP),
     LevelNote(beat=5.0, lane=-3.0, size=2.0, kind=NoteKind.NORM_TAP),
     LevelNote(beat=5.0, lane=3.0, size=2.0, kind=NoteKind.CRIT_TAP),
+    LevelNote(beat=5.5, lane=-3.0, size=1.0, kind=NoteKind.NORM_TAP),
+    LevelNote(beat=5.5, lane=3.0, size=1.0, kind=NoteKind.CRIT_TAP),
 ]
 
 flick_notes = [

@@ -48,8 +48,8 @@ from sekai.lib.note import (
 from sekai.lib.options import Options
 from sekai.lib.timescale import (
     CompositeTime,
-    group_force_note_speed,
     group_hide_notes,
+    group_preempt_time,
     group_scaled_time,
     group_time_to_scaled_time,
     update_timescale_group,
@@ -211,6 +211,7 @@ class WatchBaseNote(WatchArchetype):
             return
         draw_note(
             self.kind,
+            self.beat,
             self.visual_lane,
             self.size,
             self.visual_progress,
@@ -273,7 +274,7 @@ class WatchBaseNote(WatchArchetype):
                 progress_to(
                     attach_head.target_scaled_time,
                     group_scaled_time(attach_head.timescale_group),
-                    group_force_note_speed(attach_head.timescale_group),
+                    group_preempt_time(attach_head.timescale_group),
                 )
                 if time() < attach_head.target_time
                 else 1.0
@@ -281,7 +282,7 @@ class WatchBaseNote(WatchArchetype):
             tail_progress = progress_to(
                 attach_tail.target_scaled_time,
                 group_scaled_time(attach_tail.timescale_group),
-                group_force_note_speed(attach_tail.timescale_group),
+                group_preempt_time(attach_tail.timescale_group),
             )
             head_frac = (
                 0.0
@@ -295,7 +296,7 @@ class WatchBaseNote(WatchArchetype):
             return progress_to(
                 self.target_scaled_time,
                 group_scaled_time(self.timescale_group),
-                group_force_note_speed(self.timescale_group),
+                group_preempt_time(self.timescale_group),
             )
 
     @property
