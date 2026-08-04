@@ -1,4 +1,4 @@
-from sonolus.script.runtime import HorizontalAlign, runtime_ui, safe_area
+from sonolus.script.runtime import HorizontalAlign, runtime_ui, safe_area, screen
 from sonolus.script.ui import (
     EaseType,
     UiAnimation,
@@ -15,7 +15,7 @@ from sekai.lib.layout import Layout
 from sekai.lib.options import Options
 
 ui_config = UiConfig(
-    scope="Sekai",
+    scope="Holodori",
     primary_metric=UiMetric.ARCADE,
     secondary_metric=UiMetric.LIFE,
     menu_visibility=UiVisibility(scale=1, alpha=1),
@@ -59,19 +59,42 @@ ui_config = UiConfig(
     judgment_error_min=20,
 )
 
+COMBO_POSITION_X = 0.26
+COMBO_POSITION_Y = 0.25
+JUDGMENT_POSITION_Y = -0.11
+DEFAULT_METRIC_EDGE_MARGIN = 0.05
+NOTCH_METRIC_EDGE_MARGIN = 0.05
+
 
 def init_ui():
     ui = runtime_ui()
 
     gap = 0.05
-    box = safe_area().shrink(Vec2(gap, gap))
+    safe_box = safe_area()
+    screen_box = screen()
+    box = safe_box.shrink(Vec2(gap, gap))
     min_x_extent = min(box.r, -box.l)
     box.r = min_x_extent
     box.l = -min_x_extent
+
+    primary_anchor = Vec2(safe_box.l, box.t)
+    if safe_box.l != screen_box.l:
+        primary_anchor.x += NOTCH_METRIC_EDGE_MARGIN
+    else:
+        primary_anchor.x += DEFAULT_METRIC_EDGE_MARGIN
+
+    secondary_anchor = Vec2(safe_box.r, box.t)
+    if safe_box.r != screen_box.r:
+        secondary_anchor.x -= NOTCH_METRIC_EDGE_MARGIN
+    else:
+        secondary_anchor.x -= DEFAULT_METRIC_EDGE_MARGIN
+
+    combo_anchor = Vec2(Layout.field_w * COMBO_POSITION_X, Layout.field_h * COMBO_POSITION_Y)
+
     show_ui = not Options.hide_ui
 
     ui.menu.update(
-        anchor=box.tr,
+        anchor=secondary_anchor,
         pivot=Vec2(1, 1),
         dimensions=Vec2(0.15, 0.15) * ui.menu_config.scale,
         alpha=ui.menu_config.alpha * show_ui,
@@ -79,7 +102,7 @@ def init_ui():
         background=True,
     )
     ui.primary_metric_bar.update(
-        anchor=box.tl,
+        anchor=primary_anchor,
         pivot=Vec2(0, 1),
         dimensions=Vec2(0.75, 0.15) * ui.primary_metric_config.scale,
         alpha=ui.primary_metric_config.alpha * show_ui,
@@ -87,7 +110,7 @@ def init_ui():
         background=True,
     )
     ui.primary_metric_value.update(
-        anchor=box.tl + Vec2(0.715, -0.035) * ui.primary_metric_config.scale,
+        anchor=primary_anchor + Vec2(0.715, -0.035) * ui.primary_metric_config.scale,
         pivot=Vec2(1, 1),
         dimensions=Vec2(0, 0.08) * ui.primary_metric_config.scale,
         alpha=ui.primary_metric_config.alpha * show_ui,
@@ -95,7 +118,7 @@ def init_ui():
         background=False,
     )
     ui.secondary_metric_bar.update(
-        anchor=box.tr - Vec2(gap, 0) - Vec2(0.15, 0) * ui.menu_config.scale,
+        anchor=secondary_anchor - Vec2(gap, 0) - Vec2(0.15, 0) * ui.menu_config.scale,
         pivot=Vec2(1, 1),
         dimensions=Vec2(0.55, 0.15) * ui.secondary_metric_config.scale,
         alpha=ui.secondary_metric_config.alpha * show_ui,
@@ -103,7 +126,7 @@ def init_ui():
         background=True,
     )
     ui.secondary_metric_value.update(
-        anchor=box.tr
+        anchor=secondary_anchor
         - Vec2(gap, 0)
         - Vec2(0.15, 0) * ui.menu_config.scale
         - Vec2(0.035, 0.035) * ui.secondary_metric_config.scale,
@@ -114,15 +137,15 @@ def init_ui():
         background=False,
     )
     ui.combo_value.update(
-        anchor=Vec2(Layout.field_w * 0.355, Layout.field_h * 0.0875),
+        anchor=combo_anchor,
         pivot=Vec2(0.5, 0.5),
-        dimensions=Vec2(0, Layout.field_h * 0.14) * ui.combo_config.scale,
+        dimensions=Vec2(0, Layout.field_h * 0.1) * ui.combo_config.scale,
         alpha=ui.combo_config.alpha * show_ui,
         horizontal_align=HorizontalAlign.CENTER,
         background=False,
     )
     ui.combo_text.update(
-        anchor=Vec2(Layout.field_w * 0.355, Layout.field_h * 0.0875),
+        anchor=combo_anchor,
         pivot=Vec2(0.5, -2.25),
         dimensions=Vec2(0, Layout.field_h * 0.14 * 0.25) * ui.combo_config.scale,
         alpha=ui.combo_config.alpha * show_ui,
@@ -130,7 +153,7 @@ def init_ui():
         background=False,
     )
     ui.judgment.update(
-        anchor=Vec2(0, Layout.field_h * -0.115),
+        anchor=Vec2(0, Layout.field_h * JUDGMENT_POSITION_Y),
         pivot=Vec2(0.5, 0.5),
         dimensions=Vec2(0, Layout.field_h * 0.0475) * ui.judgment_config.scale,
         alpha=ui.judgment_config.alpha * show_ui,
