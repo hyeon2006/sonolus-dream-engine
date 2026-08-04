@@ -171,6 +171,7 @@ when absent.
 | Accent Relay       | `Holodori Accent Relay` -> `NOTE_CIRCULAR_ALTERNATIVE_YELLOW`            |
 | Damage Circular    | `Holodori Damage Note Circular` -> `NOTE_CIRCULAR_TAP_PURPLE`            |
 | Damage Linear      | `Holodori Damage Note Linear` -> `NOTE_LINEAR_TAP_PURPLE`                |
+| Damage Lane        | `Holodori Damage Lane Linear`                                            |
 
 #### Active Slide Connectors
 

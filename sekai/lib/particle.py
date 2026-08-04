@@ -47,6 +47,7 @@ class BaseParticles:
 
     damage_note_circular: Particle = particle("Holodori Damage Note Circular")
     damage_note_linear: Particle = particle("Holodori Damage Note Linear")
+    damage_note_lane_linear: Particle = particle("Holodori Damage Lane Linear")
 
     normal_note_circular_fallback: StandardParticle.NOTE_CIRCULAR_TAP_CYAN
     normal_note_linear_fallback: StandardParticle.NOTE_LINEAR_TAP_CYAN
@@ -324,7 +325,7 @@ def init_particles():
         ),
         directional=EMPTY_PARTICLE,
         tick=EMPTY_PARTICLE,
-        lane=EMPTY_PARTICLE,
+        lane=first_available_particle(BaseParticles.damage_note_lane_linear),
         lane_basic=EMPTY_PARTICLE,
         slot_linear=EMPTY_PARTICLE,
     )
