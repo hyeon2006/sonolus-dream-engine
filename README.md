@@ -134,7 +134,7 @@ listed order.
 | Accent Flick / Trace Flick (non-miss) | `Holodori Accent Flick` -> `PERFECT_ALTERNATIVE` |
 | Accent Hold                           | `Holodori Accent Hold` -> `HOLD`                 |
 | Accent Relay (non-miss)               | `Holodori Accent Tick` -> `PERFECT`              |
-| Damage Miss                           | `GOOD`                                           |
+| Damage Miss                           | `Holodori Damage` -> `GOOD`                      |
 
 ### Particle Effects
 

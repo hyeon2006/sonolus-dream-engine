@@ -554,7 +554,7 @@ def get_note_effect(kind: NoteKind, judgment: Judgment):
             result @= EMPTY_EFFECT
         case NoteKind.DAMAGE:
             if judgment == Judgment.MISS:
-                result @= Effects.normal_good
+                result @= first_available_effect(Effects.damage, Effects.normal_good)
             else:
                 result @= EMPTY_EFFECT
         case _:

@@ -21,6 +21,8 @@ class Effects:
     critical_hold: Effect = effect("Holodori Accent Hold")
     critical_tick: Effect = effect("Holodori Accent Tick")
 
+    damage: Effect = effect("Holodori Damage")
+
 
 SFX_DISTANCE = 0.02
 
