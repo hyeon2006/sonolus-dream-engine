@@ -151,7 +151,10 @@ class PreviewBaseNote(PreviewArchetype):
 def draw_note(kind: NoteKind, beat: float, lane: float, size: float, target_time: float):
     col = time_to_preview_col(target_time)
     y = time_to_preview_y(target_time, col)
-    sprite_set = get_note_sprite_set(kind, use_offbeat_skin=is_offbeat(beat))
+    sprite_set = get_note_sprite_set(
+        kind,
+        use_offbeat_skin=Options.offbeat_note_enabled and is_offbeat(beat),
+    )
     draw_note_body(sprite_set.body, kind, lane, size, target_time, col, y)
     draw_note_arrow(sprite_set.arrow, kind, lane, size, target_time, col, y)
     draw_note_tick(sprite_set.tick, lane, target_time, col, y)

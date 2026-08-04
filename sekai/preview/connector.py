@@ -10,7 +10,7 @@ from sekai.lib.connector import (
     ConnectorKind,
     draw_guide_connector_quad,
     get_active_connector_sprites,
-    get_connector_alpha_option,
+    get_connector_base_alpha,
     get_connector_quality_option,
     get_connector_z,
     get_guide_blended_rgba_segment_count,
@@ -248,7 +248,7 @@ def draw_connector(
             tail_green,
             tail_blue,
             tail_alpha,
-            get_connector_alpha_option(kind),
+            get_connector_base_alpha(kind),
         )
     quality = get_connector_quality_option(kind)
     segment_count = max(
@@ -294,7 +294,7 @@ def draw_connector(
             get_alpha((last_target_time + next_target_time) / 2)
             * (last_alpha + next_alpha)
             / 2
-            * get_connector_alpha_option(kind),
+            * get_connector_base_alpha(kind),
             0,
             1,
         )

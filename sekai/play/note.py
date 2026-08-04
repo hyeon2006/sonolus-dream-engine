@@ -256,8 +256,6 @@ class BaseNote(PlayArchetype):
             return
         if group_hide_notes(self.timescale_group):
             return
-        if Options.disable_fake_notes and not self.is_scored:
-            return
         draw_note(
             self.kind,
             self.beat,

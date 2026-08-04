@@ -259,7 +259,7 @@ def get_active_connector_z_offset(kind: ActiveConnectorKind) -> int:
             assert_never(kind)
 
 
-def get_connector_alpha_option(kind: ConnectorKind) -> float:
+def get_connector_base_alpha(kind: ConnectorKind) -> float:
     match kind:
         case (
             ConnectorKind.ACTIVE_NORMAL
@@ -267,7 +267,7 @@ def get_connector_alpha_option(kind: ConnectorKind) -> float:
             | ConnectorKind.ACTIVE_CRITICAL
             | ConnectorKind.ACTIVE_FAKE_CRITICAL
         ):
-            return Options.slide_alpha
+            return 1.0
         case (
             ConnectorKind.GUIDE_GHOST
             | ConnectorKind.GUIDE_NEUTRAL
@@ -279,7 +279,7 @@ def get_connector_alpha_option(kind: ConnectorKind) -> float:
             | ConnectorKind.GUIDE_CYAN
             | ConnectorKind.GUIDE_BLACK
         ):
-            return Options.guide_alpha
+            return 0.6
         case ConnectorKind.NONE:
             return 0.0
         case _:
@@ -347,9 +347,6 @@ def draw_connector(
         )
         or head_visual_progress == tail_visual_progress
     ):
-        return
-
-    if Options.disable_fake_notes and is_fake_active_connector(kind):
         return
 
     if ease_type == EaseType.NONE:
@@ -617,7 +614,7 @@ def draw_connector_default(
                 last_pos_offset = current_pos_offset
             total_pos_offsets += abs(last_pos_offset) ** 0.6
             curve_change_scale = total_pos_offsets * 1.5
-    alpha_change_delta = min(abs(start_alpha - end_alpha) * get_connector_alpha_option(kind), 1.0)
+    alpha_change_delta = min(abs(start_alpha - end_alpha) * get_connector_base_alpha(kind), 1.0)
     alpha_change_scale = max(
         alpha_change_delta**0.8 * 3,
         alpha_change_delta**0.5 * abs(start_pos_y - end_pos_y) * 3,
@@ -637,7 +634,7 @@ def draw_connector_default(
             end_green,
             end_blue,
             end_alpha,
-            get_connector_alpha_option(kind),
+            get_connector_base_alpha(kind),
         )
     quality = get_connector_quality_option(kind)
     segment_count = max(
@@ -679,7 +676,7 @@ def draw_connector_default(
             get_alpha((last_target_time + next_target_time) / 2)
             * (last_alpha + next_alpha)
             / 2
-            * get_connector_alpha_option(kind),
+            * get_connector_base_alpha(kind),
             0,
             1,
         )

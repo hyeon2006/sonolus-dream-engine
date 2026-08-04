@@ -168,7 +168,9 @@ def draw_basic_stage():
 def draw_holodori_stage():
     stage_layout = layout_holodori_stage()
     judgment_line_layout = layout_fallback_judge_line(judgment_approach(1))
-    ActiveSkin.holodori_stage_background.draw(stage_layout, z=get_z_alt(LAYER_STAGE, 0).tuple)
+    ActiveSkin.holodori_stage_background.draw(
+        stage_layout, z=get_z_alt(LAYER_STAGE, 0).tuple, a=1 - (Options.stage_brightness / 100)
+    )
     ActiveSkin.holodori_stage.draw(stage_layout, z=get_z_alt(LAYER_STAGE, 1).tuple)
     ActiveSkin.holodori_stage_judgment_line.draw(judgment_line_layout, z=get_z_alt(LAYER_STAGE, 2).tuple)
 

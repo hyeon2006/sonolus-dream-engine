@@ -22,19 +22,15 @@ miss_and_good.fr = "Sur un Miss et un Good"
 miss_and_good.ru = "На Miss и Good"
 miss_and_good.vi = "Khi Miss hoặc Good"
 
-[options.slide_alpha]
-title.en = "Slide Alpha"
-title.ko = "롱 노트 불투명도"
-title.fr = "Opacité des Slides"
-title.ru = "Прозрачность слайда"
-title.vi = "Độ trong suốt đường nối Note giữ"
+[options.measure_line_enabled]
+title.en = "Measure Line"
+title.ko = "소절 선"
+title.fr = "Ligne de Mesure"
 
-[options.guide_alpha]
-title.en = "Guide Alpha"
-title.ko = "가이드 불투명도"
-title.fr = "Opacité des Guides"
-title.ru = "Прозрачность гайда"
-title.vi = "Độ trong suốt đường Guide"
+[options.offbeat_note_enabled]
+title.en = "Rhythm Support"
+title.ko = "리듬 서포트"
+title.fr = "Aide Rythmique"
 
 [options.hide_ui]
 title.en = "Hide UI"
@@ -76,59 +72,12 @@ title.fr = "Vitesse des Animations d'Effets"
 title.ru = "Скорость анимации эффекта"
 title.vi = "Tốc độ hoạt ảnh hiệu ứng"
 
-[options.alternative_approach_curve]
-title.en = "Alternative Approach Curve"
-title.ko = "대체 접근 곡선 사용"
-title.fr = "Courbe d'Approche Alternative"
-title.ru = "Альтернативный подход изгиба"
-title.vi = "Sử dụng kiểu hàm tiếp cận thay thế"
-
 [options.disable_timescale]
 title.en = "Disable Timescale"
 title.ko = "시간 배율 비활성화"
 title.fr = "Désactiver l'Échelle de Temps"
 title.ru = "Отключить таймскейл"
 title.vi = "Vô hiệu hóa hiệu ứng biến đổi tốc độ Note"
-
-[options.disable_fake_notes]
-title.en = "Disable Fake Notes"
-title.ko = "가짜 노트 비활성화"
-title.fr = "Désactiver les Fausses Notes"
-title.ru = "Отключить фейк ноты"
-title.vi = "Vô hiệu hóa Note giả"
-
-[options.score_mode]
-title.en = "Score Mode"
-title.ko = "점수 모드"
-title.fr = "Mode de Score"
-title.ru = "Режим счёта"
-title.vi = "Chế độ tính điểm"
-
-[options.score_mode.values]
-weighted_flat.en = "Weighted Flat"
-weighted_flat.ko = "가중치 적용 · 고정 배점"
-weighted_flat.fr = "Pondéré · Fixe"
-weighted_flat.ru = "Определённо-взвешенный"
-weighted_flat.vi = "Có trọng số + Không thưởng Combo"
-weighted_combo.en = "Weighted Combo (Sekai Standard)"
-weighted_combo.ko = "가중치 적용 · 콤보 보너스 (세카이 표준)"
-weighted_combo.fr = "Pondéré · Combo (Standard Sekai)"
-weighted_combo.ru = "Взвешенное комбо (Стандарт секая)"
-weighted_combo.vi = "Có trọng số + Thưởng Combo (SEKAI Tiêu chuẩn)"
-unweighted_flat.en = "Unweighted Flat (Sekai Ranked Match)"
-unweighted_flat.ko = "균등 가중치 · 고정 배점 (세카이 랭크 매치)"
-unweighted_flat.fr = "Non Pondéré · Fixe (Match Classé Sekai)"
-unweighted_flat.ru = "Определённо-невзвешенный (Ранг матч секая)"
-unweighted_flat.vi = "Không trọng số + Không thưởng Combo (SEKAI Đấu hạng)"
-unweighted_combo.en = "Unweighted Combo"
-unweighted_combo.ko = "균등 가중치 · 콤보 보너스"
-unweighted_combo.fr = "Non Pondéré · Combo"
-unweighted_combo.ru = "Невзвешенное комбо"
-unweighted_combo.vi = "Không trọng số + Thưởng Combo"
-
-[options.edge_touch_correction]
-title.en = "Edge Touch Correction"
-description.en = "Adjusts touches outside the 16:9 play area on low aspect ratio devices to the nearest edge to avoid misses."
 
 [options.show_hitboxes]
 title.en = "Show Hitboxes"
@@ -148,7 +97,3 @@ description.ko = "21:9, 16:9, 4:3 화면의 기준 상자를 표시합니다."
 description.fr = "Affiche des repères pour les écrans 21:9, 16:9 et 4:3."
 description.ru = "Рисует референсные 'коробки' для экранов на 21:9, 16:9 и 4:3."
 description.vi = "Hiển thị khung tham chiếu cho các tỷ lệ màn hình 21:9, 16:9 và 4:3."
-
-[options.allow_debug_options_in_play_mode]
-title.en = "Allow Debug Options in Play Mode"
-description.en = "Allows Show Hitboxes and Test Aspect Ratio to take effect in play mode."

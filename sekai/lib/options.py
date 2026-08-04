@@ -6,13 +6,6 @@ from sonolus.script.text import StandardText
 from sekai.lib.localization import localized_options
 
 
-class ScoreMode(IntEnum):
-    WEIGHTED_FLAT = 0
-    WEIGHTED_COMBO = 1
-    UNWEIGHTED_FLAT = 2
-    UNWEIGHTED_COMBO = 3
-
-
 class VibrateMode(IntEnum):
     DISABLED = 0
     MISS = 1
@@ -39,6 +32,19 @@ class Options:
         max=12,
         step=0.1,
     )
+    stage_brightness: float = slider_option(
+        name=StandardText.STAGE_ALPHA,
+        scope="Holodori",
+        default=30,
+        min=0,
+        max=100,
+        step=10,
+    )
+    mirror: bool = toggle_option(
+        name=StandardText.MIRROR,
+        scope="Holodori",
+        default=False,
+    )
     judgment_line_position: int = slider_option(
         name=StandardText.JUDGELINE_POSITION,
         scope="Holodori",
@@ -46,91 +52,6 @@ class Options:
         min=-10,
         max=20,
         step=1,
-    )
-    mirror: bool = toggle_option(
-        name=StandardText.MIRROR,
-        default=False,
-    )
-    sfx_enabled: bool = toggle_option(
-        name=StandardText.EFFECT,
-        scope="Holodori",
-        default=True,
-    )
-    auto_sfx: bool = toggle_option(
-        name=StandardText.EFFECT_AUTO,
-        scope="Holodori",
-        default=False,
-    )
-    tap_haptics_enabled: bool = toggle_option(
-        name=StandardText.HAPTIC,
-        scope="Holodori",
-        default=False,
-    )
-    vibrate_mode: VibrateMode = select_option(
-        name="Vibration Mode",
-        scope="Holodori",
-        values=[
-            "disabled",
-            "miss",
-            "miss_and_good",
-        ],
-        default=0,
-    )
-    note_effect_enabled: bool = toggle_option(
-        name=StandardText.NOTE_EFFECT,
-        scope="Holodori",
-        default=True,
-    )
-    note_effect_size: float = slider_option(
-        name=StandardText.NOTE_EFFECT_SIZE,
-        scope="Holodori",
-        default=1,
-        min=0.1,
-        max=2,
-        step=0.05,
-        unit=StandardText.PERCENTAGE_UNIT,
-    )
-    sim_line_enabled: bool = toggle_option(
-        name=StandardText.SIMLINE,
-        scope="Holodori",
-        default=True,
-    )
-    slide_alpha: float = slider_option(
-        name="Slide Alpha",
-        scope="Holodori",
-        default=1,
-        min=0,
-        max=1,
-        step=0.05,
-        unit=StandardText.PERCENTAGE_UNIT,
-    )
-    guide_alpha: float = slider_option(
-        name="Guide Alpha",
-        scope="Holodori",
-        default=0.6,
-        min=0,
-        max=1,
-        step=0.05,
-        unit=StandardText.PERCENTAGE_UNIT,
-    )
-    lane_effect_enabled: bool = toggle_option(
-        name=StandardText.LANE_EFFECT,
-        scope="Holodori",
-        default=True,
-    )
-    slot_effect_enabled: bool = toggle_option(
-        name=StandardText.SLOT_EFFECT,
-        scope="Holodori",
-        default=True,
-    )
-    slot_effect_size: float = slider_option(
-        name=StandardText.SLOT_EFFECT_SIZE,
-        scope="Holodori",
-        default=1,
-        min=0,
-        max=2,
-        step=0.05,
-        unit=StandardText.PERCENTAGE_UNIT,
     )
     stage_cover: int = slider_option(
         name=StandardText.STAGE_COVER_VERTICAL,
@@ -149,6 +70,79 @@ class Options:
         min=0,
         max=100,
         step=1,
+    )
+    tap_haptics_enabled: bool = toggle_option(
+        name=StandardText.HAPTIC,
+        scope="Holodori",
+        default=False,
+    )
+    vibrate_mode: VibrateMode = select_option(
+        name="Vibration Mode",
+        scope="Holodori",
+        values=[
+            "disabled",
+            "miss",
+            "miss_and_good",
+        ],
+        default=0,
+    )
+    sim_line_enabled: bool = toggle_option(
+        name=StandardText.SIMLINE,
+        scope="Holodori",
+        default=True,
+    )
+    measure_line_enabled: bool = toggle_option(
+        name="Enable Measure Line",
+        scope="Holodori",
+        default=True,
+    )
+    offbeat_note_enabled: bool = toggle_option(
+        name="Enable Offbeat Note",
+        scope="Holodori",
+        default=True,
+    )
+    lane_effect_enabled: bool = toggle_option(
+        name=StandardText.LANE_EFFECT,
+        scope="Holodori",
+        default=True,
+    )
+    sfx_enabled: bool = toggle_option(
+        name=StandardText.EFFECT,
+        scope="Holodori",
+        default=True,
+    )
+    auto_sfx: bool = toggle_option(
+        name=StandardText.EFFECT_AUTO,
+        scope="Holodori",
+        default=False,
+    )
+    note_effect_enabled: bool = toggle_option(
+        name=StandardText.NOTE_EFFECT,
+        scope="Holodori",
+        default=True,
+    )
+    note_effect_size: float = slider_option(
+        name=StandardText.NOTE_EFFECT_SIZE,
+        scope="Holodori",
+        default=1,
+        min=0.1,
+        max=2,
+        step=0.05,
+        unit=StandardText.PERCENTAGE_UNIT,
+    )
+    slot_effect_enabled: bool = toggle_option(
+        name=StandardText.SLOT_EFFECT,
+        scope="Holodori",
+        default=True,
+    )
+    slot_effect_size: float = slider_option(
+        name=StandardText.SLOT_EFFECT_SIZE,
+        scope="Holodori",
+        default=1,
+        min=0,
+        max=2,
+        step=0.05,
+        unit=StandardText.PERCENTAGE_UNIT,
     )
     lock_stage_aspect_ratio: bool = toggle_option(
         name=StandardText.STAGE_ASPECTRATIO_LOCK,
@@ -200,36 +194,11 @@ class Options:
         step=0.05,
         unit=StandardText.PERCENTAGE_UNIT,
     )
-    alternative_approach_curve: bool = toggle_option(
-        name="Alternative Approach Curve",
-        advanced=True,
-        default=False,
-        scope="Holodori",
-    )
     disable_timescale: bool = toggle_option(
         name="Disable Timescale",
         standard=True,
         advanced=True,
         default=False,
-    )
-    disable_fake_notes: bool = toggle_option(
-        name="Disable Fake Notes",
-        standard=True,
-        advanced=True,
-        default=False,
-    )
-    score_mode: ScoreMode = select_option(
-        name="Score Mode",
-        scope="Holodori",
-        values=[
-            "weighted_flat",
-            "weighted_combo",
-            "unweighted_flat",
-            "unweighted_combo",
-        ],
-        standard=True,
-        advanced=True,
-        default=1,
     )
     show_hitboxes: bool = toggle_option(
         name="Show Hitboxes",

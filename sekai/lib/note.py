@@ -238,7 +238,10 @@ def draw_note(
     if note_alpha <= 0:
         return
     travel = judgment_approach(visual_progress)
-    sprite_set = get_note_sprite_set(kind, use_offbeat_skin=is_offbeat(beat))
+    sprite_set = get_note_sprite_set(
+        kind,
+        use_offbeat_skin=Options.offbeat_note_enabled and is_offbeat(beat),
+    )
     draw_note_body(sprite_set.body, kind, lane, size, travel, target_time, transform, note_alpha)
     draw_note_arrow(sprite_set.arrow, kind, lane, size, travel, target_time, transform, note_alpha)
     draw_note_tick(sprite_set.tick, lane, travel, target_time, transform, note_alpha)

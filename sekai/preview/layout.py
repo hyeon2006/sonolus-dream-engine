@@ -291,14 +291,15 @@ def layout_preview_sim_line(
     right_lane: float,
     col: int,
     y: float,
+    height_scale: float = 1.0,
 ) -> Quad:
     if left_lane > right_lane:
         left_lane, right_lane = right_lane, left_lane
     return Rect(
         l=lane_to_preview_x(left_lane, col),
         r=lane_to_preview_x(right_lane, col),
-        b=y - PREVIEW_NOTE_H,
-        t=y + PREVIEW_NOTE_H,
+        b=y - PREVIEW_NOTE_H * height_scale,
+        t=y + PREVIEW_NOTE_H * height_scale,
     ).as_quad()
 
 

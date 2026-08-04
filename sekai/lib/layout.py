@@ -232,28 +232,11 @@ def current_stage_tilt() -> float:
 
 
 def approach_curve_base(x: float) -> float:
-    if Options.alternative_approach_curve:
-        d_0 = 1 / APPROACH_SCALE
-        d_1 = 2.5
-        v_1 = (d_0 - d_1) / d_1**2
-        d = 1 / lerp(d_0, d_1, x) if x < 1 else 1 / d_1 + v_1 * (x - 1)
-        return remap(1 / d_0, 1 / d_1, APPROACH_SCALE, 1, d)
     return APPROACH_SCALE ** (1 - x)
 
 
 def inverse_approach_curve_base(approach_value: float) -> float:
-    if Options.alternative_approach_curve:
-        d_0 = 1 / APPROACH_SCALE
-        d_1 = 2.5
-        v_1 = (d_0 - d_1) / d_1**2
-        d = remap(APPROACH_SCALE, 1, 1 / d_0, 1 / d_1, approach_value)
-        if d <= 1 / d_1:
-            raw = (1 / d - d_0) / (d_1 - d_0)
-        else:
-            raw = 1 + (d - 1 / d_1) / v_1
-    else:
-        raw = 1 - log(approach_value) / log(APPROACH_SCALE)
-    return raw
+    return 1 - log(approach_value) / log(APPROACH_SCALE)
 
 
 def approach_slice_window(tilt: float, spawn_depth: float) -> tuple[float, float]:

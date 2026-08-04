@@ -13,6 +13,7 @@ from sekai.lib.layout import (
     layout_perspective_line,
     tilt_width_factor,
 )
+from sekai.lib.options import Options
 from sekai.lib.skin import ActiveSkin
 
 TIMED_LINE_HEIGHT_SCALE = 0.5
@@ -21,6 +22,16 @@ TIMED_LINE_HEIGHT_SCALE = 0.5
 class TimedLineKind(IntEnum):
     MEASURE = 0
     SKILL_ACTIVATION = 1
+
+
+def is_timed_line_enabled(kind: TimedLineKind) -> bool:
+    match kind:
+        case TimedLineKind.MEASURE:
+            return Options.measure_line_enabled
+        case TimedLineKind.SKILL_ACTIVATION:
+            return True
+        case _:
+            assert_never(kind)
 
 
 def get_timed_line_lane_bound(kind: TimedLineKind) -> float:
@@ -56,6 +67,8 @@ def get_timed_line_end_progress(kind: TimedLineKind) -> float:
 
 
 def draw_timed_line(kind: TimedLineKind, visual_progress: float, target_time: float) -> None:
+    if not is_timed_line_enabled(kind):
+        return
     if visual_progress < DynamicLayout.progress_start or visual_progress > DynamicLayout.progress_cutoff:
         return
 
