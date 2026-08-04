@@ -6,7 +6,7 @@ Handles common initialization logic for the engine. Must appear exactly once as 
 
 ### Fields
 
-* **initialLife (int)**: The initial life value for the level. Defaults to 1000.
+- **initialLife (int)**: The initial life value for the level. Defaults to 1000.
 
 ## #BPM_CHANGE
 
@@ -14,8 +14,8 @@ The standard bpm change archetype.
 
 ### Fields
 
-* **#BEAT (float)**
-* **#BPM (float)**
+- **#BEAT (float)**
+- **#BPM (float)**
 
 ## #TIMESCALE_GROUP
 
@@ -23,8 +23,8 @@ Represents a timescale group and is referenced by notes and timescale changes.
 
 ### Fields
 
-* **first (ref[#TIMESCALE_CHANGE])**: [Temporary] a reference to the first change
-* **forceNoteSpeed (float)**: If greater than 0 (valid range 1–12), overrides the effective note speed for notes attached to this group, and bypasses the stage-cover FIXED_ONLY scroll-speed compensation. A value of 0 means follow the user's #NOTE_SPEED option.
+- **first (ref[#TIMESCALE_CHANGE])**: [Temporary] a reference to the first change
+- **forceNoteSpeed (float)**: If greater than 0 (valid range 1–12), overrides the effective note speed for notes attached to this group, and bypasses the stage-cover FIXED_ONLY scroll-speed compensation. A value of 0 means follow the user's #NOTE_SPEED option.
 
 ## #TIMESCALE_CHANGE
 
@@ -32,71 +32,69 @@ A timescale change event.
 
 ### Fields
 
-* **#BEAT (float)**
-* **#TIMESCALE (float)**
-* **#TIMESCALE_SKIP (float)**
-* **#TIMESCALE_GROUP (ref[#TIMESCALE_GROUP])**
-* **#TIMESCALE_EASE (TimescaleEaseType)**:
-  * NONE = 0
-  * LINEAR = 1
-* **next (ref[#TIMESCALE_CHANGE])**: [Temporary] a reference to the next change
-* **hideNotes**: Whether to hide notes while this change is active.
+- **#BEAT (float)**
+- **#TIMESCALE (float)**
+- **#TIMESCALE_SKIP (float)**
+- **#TIMESCALE_GROUP (ref[#TIMESCALE_GROUP])**
+- **#TIMESCALE_EASE (TimescaleEaseType)**:
+    - NONE = 0
+    - LINEAR = 1
+- **next (ref[#TIMESCALE_CHANGE])**: [Temporary] a reference to the next change
+- **hideNotes**: Whether to hide notes while this change is active.
 
-## *Note
+## \*Note
 
 Supported note archetypes:
 
-* `NormalTapNote`, `CriticalTapNote`
-* `NormalTraceFlickNote`, `CriticalTraceFlickNote`
-* `NormalHeadTapNote`, `CriticalHeadTapNote`
-* `NormalTailFlickNote`, `CriticalTailFlickNote`
-* `NormalTailTraceNote`, `CriticalTailTraceNote`
-* `NormalTickNote`, `CriticalTickNote`
-* `DamageNote`, `AnchorNote`, `TransientHiddenTickNote`
+- `NormalTapNote`, `CriticalTapNote`
+- `NormalTraceFlickNote`, `CriticalTraceFlickNote`
+- `NormalHeadTapNote`, `CriticalHeadTapNote`
+- `NormalTailFlickNote`, `CriticalTailFlickNote`
+- `NormalTailTraceNote`, `CriticalTailTraceNote`
+- `NormalTickNote`, `CriticalTickNote`
+- `DamageNote`, `AnchorNote`, `TransientHiddenTickNote`
 
 `TransientHiddenTickNote` is generated during export and should not be authored directly.
 
 ### Fields
 
-* **#BEAT (float)**
-* **#TIMESCALE_GROUP (ref[#TIMESCALE_GROUP])**: The timescale group of the note.
-* **lane (float)**: The lane for the center of the note, centered at 0 with typical values from -5.5 to 5.5 (the edges of the stage are at lane -6 and 6).
-* **size (float)**: The size in lanes of *half* the note. E.g. a note of size 1 would take up two lanes and have an extent of (lane - size) to (lane + size). Typically ranges from 0.5 to 6.
-* **direction (Direction)**: Flick direction. All flick angles are accepted, and legacy direction values are normalized to:
-  * UP_OMNI = 0
-* **next (ref[Note])**: [Editor] A reference to the next note in the slide, if any.
-* **activeHead (ref?[Note])**: An optional reference to the starting note of the note's slide section.
-* **isAttached (bool)**: Whether this note's **lane, size**, and effective **timescale** should be calculated from **attachHead** and **attachTail**.
-* **connectorEase (EaseType)**: What kind of easing is used for the connector immediately following this note. Takes on one of the following values:
-  * NONE = 0
-  * LINEAR = 1
-  * IN_QUAD = 2
-  * OUT_QUAD = 3
-  * IN_OUT_QUAD = 4
-  * OUT_IN_QUAD = 5
-* **segmentKind (ConnectorKind)**: What kind of connector comes after this note, if any. Every connector in one slide must use the same value. Takes on one of the following values:
-  * NONE = 0
-  * ACTIVE_NORMAL = 1
-  * ACTIVE_CRITICAL = 2
-  * DAMAGE = 3
-  * FAKE_ACTIVE_NORMAL = 51
-  * FAKE_ACTIVE_CRITICAL = 52
-  * FAKE_DAMAGE = 53
-  * GUIDE_GHOST = 100
-  * GUIDE_NEUTRAL = 101
-  * GUIDE_RED = 102
-  * GUIDE_GREEN = 103
-  * GUIDE_BLUE = 104
-  * GUIDE_YELLOW = 105
-  * GUIDE_PURPLE = 106 (magenta)
-  * GUIDE_CYAN = 107
-  * GUIDE_BLACK = 108
-* **segmentRed (float)**: The red component of a guide at this note, in the range `[0, 1]`. Defaults to `-1`, which uses the fallback color of **segmentKind**.
-* **segmentGreen (float)**: The green component of a guide at this note, in the range `[0, 1]`. Defaults to `-1`, which uses the fallback color of **segmentKind**.
-* **segmentBlue (float)**: The blue component of a guide at this note, in the range `[0, 1]`. Defaults to `-1`, which uses the fallback color of **segmentKind**.
-* **segmentAlpha (float)**: The alpha component of a guide at this note, in the range `[0, 1]`.
-* **attachHead (ref?[Note])**: The optional head the note attaches to for its **lane**, **size**, and **effective timescale**.
-* **attachTail (ref?[Note])**: The optional tail the note attaches to for its **lane**, **size**, and **effective timescale**.
+- **#BEAT (float)**
+- **#TIMESCALE_GROUP (ref[#TIMESCALE_GROUP])**: The timescale group of the note.
+- **lane (float)**: The lane for the center of the note, centered at 0 with typical values from -5.5 to 5.5 (the edges of the stage are at lane -6 and 6).
+- **size (float)**: The size in lanes of _half_ the note. E.g. a note of size 1 would take up two lanes and have an extent of (lane - size) to (lane + size). Typically ranges from 0.5 to 6.
+- **direction (Direction)**: Flick direction. All flick angles are accepted, and legacy direction values are normalized to:
+    - UP_OMNI = 0
+- **next (ref[Note])**: [Editor] A reference to the next note in the slide, if any.
+- **activeHead (ref?[Note])**: An optional reference to the starting note of the note's slide section.
+- **isAttached (bool)**: Whether this note's **lane, size**, and effective **timescale** should be calculated from **attachHead** and **attachTail**.
+- **connectorEase (EaseType)**: What kind of easing is used for the connector immediately following this note. Takes on one of the following values:
+    - NONE = 0
+    - LINEAR = 1
+    - IN_QUAD = 2
+    - OUT_QUAD = 3
+    - IN_OUT_QUAD = 4
+    - OUT_IN_QUAD = 5
+- **segmentKind (ConnectorKind)**: What kind of connector comes after this note, if any. Every connector in one slide must use the same value. Takes on one of the following values:
+    - NONE = 0
+    - ACTIVE_NORMAL = 1
+    - ACTIVE_CRITICAL = 2
+    - FAKE_ACTIVE_NORMAL = 51
+    - FAKE_ACTIVE_CRITICAL = 52
+    - GUIDE_GHOST = 100
+    - GUIDE_NEUTRAL = 101
+    - GUIDE_RED = 102
+    - GUIDE_GREEN = 103
+    - GUIDE_BLUE = 104
+    - GUIDE_YELLOW = 105
+    - GUIDE_PURPLE = 106 (magenta)
+    - GUIDE_CYAN = 107
+    - GUIDE_BLACK = 108
+- **segmentRed (float)**: The red component of a guide at this note, in the range `[0, 1]`. Defaults to `-1`, which uses the fallback color of **segmentKind**.
+- **segmentGreen (float)**: The green component of a guide at this note, in the range `[0, 1]`. Defaults to `-1`, which uses the fallback color of **segmentKind**.
+- **segmentBlue (float)**: The blue component of a guide at this note, in the range `[0, 1]`. Defaults to `-1`, which uses the fallback color of **segmentKind**.
+- **segmentAlpha (float)**: The alpha component of a guide at this note, in the range `[0, 1]`.
+- **attachHead (ref?[Note])**: The optional head the note attaches to for its **lane**, **size**, and **effective timescale**.
+- **attachTail (ref?[Note])**: The optional tail the note attaches to for its **lane**, **size**, and **effective timescale**.
 
 For new guide data, use **GUIDE_GHOST = 100** and specify **segmentRed**, **segmentGreen**, **segmentBlue**, and **segmentAlpha**. RGBA values are interpolated between adjacent notes without changing **segmentKind**.
 
@@ -107,12 +105,12 @@ An active slide connector or guide.
 
 ## Fields
 
-* **head (ref[Note])**: A reference to the previous (earlier beat) note this connector connects to. Used to calculate starting **beat**, **lane**, and **size**. Also used to obtain the **ease** type.
-* **tail (ref[Note])**: A reference to the next (later beat) note this connector connects to. Used to calculate ending **beat**, **lane** and **size**
-* **segmentHead (ref[Note])**: For a guide, the connector's head note. For other slides, the first note of the slide.
-* **segmentTail (ref[Note])**: For a guide, the connector's tail note. For other slides, the last note of the slide.
-* **activeHead (ref?[Note])**: For an active or DAMAGE slide, a reference to the first note of the slide.
-* **activeTail (ref?[Note])**: For an active or DAMAGE slide, a reference to the last note of the slide.
+- **head (ref[Note])**: A reference to the previous (earlier beat) note this connector connects to. Used to calculate starting **beat**, **lane**, and **size**. Also used to obtain the **ease** type.
+- **tail (ref[Note])**: A reference to the next (later beat) note this connector connects to. Used to calculate ending **beat**, **lane** and **size**
+- **segmentHead (ref[Note])**: For a guide, the connector's head note. For other slides, the first note of the slide.
+- **segmentTail (ref[Note])**: For a guide, the connector's tail note. For other slides, the last note of the slide.
+- **activeHead (ref?[Note])**: For an active slide, a reference to the first note of the slide.
+- **activeTail (ref?[Note])**: For an active slide, a reference to the last note of the slide.
 
 ## SimLine
 
@@ -121,5 +119,23 @@ A simultaneous note line.
 
 ## Fields
 
-* **left (ref[Note])**: A reference to the left note this connects to.
-* **right (ref[Note])**: A reference to the right note this connects to.
+- **left (ref[Note])**: A reference to the left note this connects to.
+- **right (ref[Note])**: A reference to the right note this connects to.
+
+## MeasureLine
+
+A note-independent line.
+
+## Fields
+
+- **#BEAT (float)**
+- **#TIMESCALE_GROUP (ref[#TIMESCALE_GROUP])**: The timescale group of the line. Defaults to the first group when omitted.
+
+## SkillActivationLine
+
+A note-independent line with the same behavior as `MeasureLine`.
+
+## Fields
+
+- **#BEAT (float)**
+- **#TIMESCALE_GROUP (ref[#TIMESCALE_GROUP])**: The timescale group of the line. Defaults to the first group when omitted.
