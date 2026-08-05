@@ -259,7 +259,7 @@ TAP_WINDOW = frames_to_window((4, 3), (6, 5), (8, 7), (9, 8))
 
 TRACE_FLICK_WINDOW = frames_to_window((6, 5), None, None, (9, 8))
 
-SLIDE_END_TRACE_WINDOW = frames_to_window(1.5, None, None, None)
+SLIDE_END_TRACE_WINDOW = frames_to_window((6, 5), None, None, None)
 SLIDE_END_FLICK_WINDOW = frames_to_window((6, 5), None, None, (9, 8))
 
 SLIDE_TICK_JUDGMENT_WINDOW = frames_to_window(1.5, None, None, None)
