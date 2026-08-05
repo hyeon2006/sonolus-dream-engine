@@ -623,17 +623,20 @@ def play_note_hit_effects(
 
 
 def get_note_haptic_feedback(kind: NoteKind, judgment: Judgment) -> HapticType:
-    if judgment == Judgment.MISS and Options.vibrate_mode in {VibrateMode.MISS, VibrateMode.MISS_AND_GOOD}:
-        return HapticType.LONG
-    if judgment == Judgment.GOOD and Options.vibrate_mode in {VibrateMode.MISS_AND_GOOD}:
-        return HapticType.LONG
-    if not Options.tap_haptics_enabled or judgment not in {Judgment.PERFECT, Judgment.GREAT}:
+    if judgment == Judgment.MISS or kind in {NoteKind.ANCHOR, NoteKind.HIDE_TICK}:
         return HapticType.NONE
-    match kind:
-        case NoteKind.NORM_TAP | NoteKind.NORM_HEAD_TAP | NoteKind.CRIT_TAP | NoteKind.CRIT_HEAD_TAP:
+
+    match Options.vibrate_mode:
+        case VibrateMode.STRONG:
             return HapticType.HEAVY
-        case _:
+        case VibrateMode.MEDIUM:
+            return HapticType.MEDIUM
+        case VibrateMode.WEAK:
+            return HapticType.LIGHT
+        case VibrateMode.DISABLED:
             return HapticType.NONE
+        case _:
+            assert_never(Options.vibrate_mode)
 
 
 def schedule_note_auto_sfx(kind: NoteKind, target_time: float):

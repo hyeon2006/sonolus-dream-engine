@@ -7,9 +7,10 @@ from sekai.lib.localization import localized_options
 
 
 class VibrateMode(IntEnum):
-    DISABLED = 0
-    MISS = 1
-    MISS_AND_GOOD = 2
+    STRONG = 0
+    MEDIUM = 1
+    WEAK = 2
+    DISABLED = 3
 
 
 @localized_options
@@ -71,20 +72,16 @@ class Options:
         max=100,
         step=1,
     )
-    tap_haptics_enabled: bool = toggle_option(
-        name=StandardText.HAPTIC,
-        scope="Holodori",
-        default=False,
-    )
     vibrate_mode: VibrateMode = select_option(
         name="Vibration Mode",
         scope="Holodori",
         values=[
+            "strong",
+            "medium",
+            "weak",
             "disabled",
-            "miss",
-            "miss_and_good",
         ],
-        default=0,
+        default=1,
     )
     sim_line_enabled: bool = toggle_option(
         name=StandardText.SIMLINE,
