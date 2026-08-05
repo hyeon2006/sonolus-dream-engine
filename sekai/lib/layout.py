@@ -18,7 +18,7 @@ from sekai.lib.timescale import CompositeTime
 LANE_T = 47 / 850
 LANE_B = 1176 / 850
 
-NOTE_H = 75 / 850 / 2
+NOTE_H = 60 / 817 / 2
 NOTE_EDGE_W = 0.25
 NOTE_SLIM_EDGE_W = 0.125
 
@@ -155,7 +155,7 @@ def note_efold_time(note_speed: float) -> float:
 
 
 def configured_judgment_line_y_offset() -> float:
-    depth = 1 - Options.judgment_line_position * HIDDEN_DEPTH_STEP / 2
+    depth = 817 / 850 - Options.judgment_line_position * HIDDEN_DEPTH_STEP / 2
     return 1 - inverse_approach_curve_base(depth)
 
 
