@@ -18,17 +18,11 @@ Package version.
 
 Partial database engine item compatible with [sonolus-express](https://github.com/Sonolus/sonolus-express).
 
-### `susToUSC(sus)`
+### `susToLevelData(sus, offset?)`
 
-Converts sus chart to USC (Universal Sekai Chart).
+Converts a Holodori SUS chart directly to Next SEKAI Level Data.
 
 - `sus`: sus chart.
-
-### `uscToLevelData(usc, offset?)`
-
-Converts USC (Universal Sekai Chart) to Level Data.
-
-- `usc`: usc chart.
 - `offset`: offset (default: `0`).
 
 ### Assets

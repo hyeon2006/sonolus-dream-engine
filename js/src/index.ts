@@ -1,8 +1,6 @@
 import { DatabaseEngineItem } from '@sonolus/core'
 
-export { susToUSC } from './sus/convert.js'
-export { uscToLevelData } from './usc/convert.js'
-export * from './usc/index.js'
+export { susToLevelData } from './sus/convert.js'
 
 export const version = '0.0.0'
 
