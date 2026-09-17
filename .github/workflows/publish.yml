@@ -6,8 +6,7 @@ on:
       - 'v*'
 
 permissions:
-  id-token: write
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -41,5 +40,9 @@ jobs:
         working-directory: ./js
       - run: npm run build
         working-directory: ./js
-      - run: npm publish
+      - run: npm pack
         working-directory: ./js
+
+      - uses: ncipollo/release-action@v1
+        with:
+            artifacts: 'js/*.tgz'
