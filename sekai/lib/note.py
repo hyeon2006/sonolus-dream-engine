@@ -496,7 +496,7 @@ def get_note_particles(kind: NoteKind) -> NoteParticleSet:
 def get_note_effect(kind: NoteKind, judgment: Judgment):
     result = Effect(-1)
     match kind:
-        case NoteKind.NORM_TAP | NoteKind.NORM_HEAD_TAP | NoteKind.CRIT_HEAD_TAP:
+        case NoteKind.NORM_TAP | NoteKind.NORM_HEAD_TAP:
             match judgment:
                 case Judgment.PERFECT:
                     result @= Effects.normal_perfect
@@ -530,7 +530,7 @@ def get_note_effect(kind: NoteKind, judgment: Judgment):
                 result @= first_available_effect(Effects.normal_tick, Effects.normal_perfect)
             else:
                 result @= EMPTY_EFFECT
-        case NoteKind.CRIT_TAP:
+        case NoteKind.CRIT_TAP | NoteKind.CRIT_HEAD_TAP:
             if judgment != Judgment.MISS:
                 result @= first_available_effect(Effects.critical_tap, Effects.normal_perfect)
             else:
