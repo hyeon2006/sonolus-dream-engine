@@ -237,16 +237,16 @@ def init_particles():
         slot_linear=first_available_particle(BaseParticles.slot_accent_linear),
     )
     ActiveParticles.trace_note @= NoteParticleSet(
-        circular=EMPTY_PARTICLE,
+        circular=first_available_particle(
+            BaseParticles.long_note_circular,
+            BaseParticles.long_note_circular_fallback,
+        ),
         linear=first_available_particle(
             BaseParticles.long_note_linear,
             BaseParticles.long_note_linear_fallback,
         ),
         directional=EMPTY_PARTICLE,
-        tick=first_available_particle(
-            BaseParticles.long_note_circular,
-            BaseParticles.long_note_circular_fallback,
-        ),
+        tick=EMPTY_PARTICLE,
         lane=EMPTY_PARTICLE,
         lane_basic=EMPTY_PARTICLE,
         slot_linear=EMPTY_PARTICLE,
@@ -264,16 +264,16 @@ def init_particles():
         slot_linear=EMPTY_PARTICLE,
     )
     ActiveParticles.critical_trace_note @= NoteParticleSet(
-        circular=EMPTY_PARTICLE,
+        circular=first_available_particle(
+            BaseParticles.accent_note_circular,
+            BaseParticles.accent_note_circular_fallback,
+        ),
         linear=first_available_particle(
             BaseParticles.accent_note_linear,
             BaseParticles.accent_note_linear_fallback,
         ),
         directional=EMPTY_PARTICLE,
-        tick=first_available_particle(
-            BaseParticles.accent_note_circular,
-            BaseParticles.accent_note_circular_fallback,
-        ),
+        tick=EMPTY_PARTICLE,
         lane=EMPTY_PARTICLE,
         lane_basic=EMPTY_PARTICLE,
         slot_linear=EMPTY_PARTICLE,
