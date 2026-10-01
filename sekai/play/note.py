@@ -200,6 +200,10 @@ class BaseNote(PlayArchetype):
 
         update_timescale_group(self.timescale_group)
 
+        if is_flick(self.kind) and self.best_touch_time != DEFAULT_BEST_TOUCH_TIME:
+            # Keep empty tap sounds suppressed while an early flick awaits completion.
+            PlayLevelMemory.last_flick_sfx_time = time()
+
         if self.should_complete_early_input():
             self.complete()
             return
@@ -342,6 +346,7 @@ class BaseNote(PlayArchetype):
             has_flick = True
         if not has_flick:
             return
+        PlayLevelMemory.last_flick_sfx_time = time()
         if offset_adjusted_time() >= self.target_time:
             if offset_adjusted_time() - delta_time() <= self.target_time <= offset_adjusted_time():
                 self.complete()

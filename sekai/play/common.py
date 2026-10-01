@@ -1,6 +1,6 @@
 from sonolus.script.globals import level_memory
 
-EMPTY_TAP_SFX_SUPPRESSION_DURATION = 0.5
+EMPTY_TAP_SFX_SUPPRESSION_DURATION = 1.0
 
 
 @level_memory
