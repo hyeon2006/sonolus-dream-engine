@@ -805,9 +805,12 @@ def get_leniency(kind: NoteKind) -> float:
 
 
 def has_tap_input(kind: NoteKind) -> bool:
+    # Standalone trace flicks reserve taps, but their judgment still requires a flick.
     return kind in {
         NoteKind.NORM_TAP,
         NoteKind.CRIT_TAP,
+        NoteKind.NORM_TRACE_FLICK,
+        NoteKind.CRIT_TRACE_FLICK,
         NoteKind.NORM_HEAD_TAP,
         NoteKind.CRIT_HEAD_TAP,
     }
