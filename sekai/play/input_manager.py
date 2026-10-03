@@ -9,6 +9,7 @@ from sonolus.script.runtime import Touch, time, touches
 
 from sekai.lib import archetype_names
 from sekai.lib.layout import DynamicLayout, segment_closeness_score
+from sekai.lib.note import is_head
 from sekai.play import note
 
 INPUT_SLOTS = 16
@@ -94,6 +95,9 @@ def preassign_taps():
             note_i = preferred[i]
             if note_i < 0:
                 continue
+            target_note = active[note_i].get()
+            if target_note.captured_touch_id != 0:
+                continue
             is_best = True
             for j in range(INPUT_SLOTS):
                 if j == i or preferred[j] != note_i:
@@ -103,10 +107,26 @@ def preassign_taps():
                     break
             if not is_best:
                 continue
-            target_note = active[note_i].get()
             touch = touches()[i]
             disallow_empty(touch)
             target_note.captured_touch_id = touch.id
+            if is_head(target_note.kind):
+                for ref in active:
+                    head = ref.get()
+                    if head.captured_touch_id != 0 or not is_head(head.kind):
+                        continue
+                    if head.target_time != target_note.target_time:
+                        continue
+                    # Sharing requires overlap of note bodies, excluding hitbox leniency.
+                    if head.lane - head.size >= target_note.lane + target_note.size:
+                        continue
+                    if head.lane + head.size <= target_note.lane - target_note.size:
+                        continue
+                    if not head.hitbox.bounds.contains_point(touch.position):
+                        continue
+                    if touch.time not in head.unadjusted_input_interval:
+                        continue
+                    head.captured_touch_id = touch.id
             input_assigned[i] = True
             any_assigned = True
 
