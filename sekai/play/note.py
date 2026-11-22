@@ -339,8 +339,6 @@ class BaseNote(PlayArchetype):
             return
         has_flick = False
         for touch in touches():
-            if not self.check_touch_is_eligible_for_trace(touch):
-                continue
             if not self.check_touch_is_eligible_for_trace_flick(touch):
                 continue
             has_flick = True
