@@ -9,7 +9,7 @@ from sonolus.script.runtime import Touch, time, touches
 
 from sekai.lib import archetype_names
 from sekai.lib.layout import DynamicLayout, segment_closeness_score
-from sekai.lib.note import is_head
+from sekai.lib.note import is_flick, is_head
 from sekai.play import note
 
 INPUT_SLOTS = 16
@@ -108,7 +108,8 @@ def preassign_taps():
             if not is_best:
                 continue
             touch = touches()[i]
-            disallow_empty(touch)
+            if not is_flick(target_note.kind):
+                disallow_empty(touch)
             target_note.captured_touch_id = touch.id
             if is_head(target_note.kind):
                 for ref in active:

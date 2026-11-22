@@ -808,6 +808,8 @@ def has_tap_input(kind: NoteKind) -> bool:
     return kind in {
         NoteKind.NORM_TAP,
         NoteKind.CRIT_TAP,
+        NoteKind.NORM_TRACE_FLICK,
+        NoteKind.CRIT_TRACE_FLICK,
         NoteKind.NORM_HEAD_TAP,
         NoteKind.CRIT_HEAD_TAP,
     }
